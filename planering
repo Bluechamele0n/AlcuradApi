@@ -1,0 +1,58 @@
+planering
+
+tidsplanering               Vad som ska göras                             När ska det va klart
+vecka 34
+Måndag  -                        planering                                      Måndag vecka 34                    
+Tisdag  - skriva kod för att läsa ini fil och skriva in i ini fil               onsdag vecka 34
+Onsdag  - fortsätta med ini fil och börja med inloggning                        Torsdag vecka 34
+Torsdag - fortsätta med inloggning och börja med redigering av ini fil          Fredag vecka 34
+Fredag  - fortsätta med redigering av ini fil och börja med språkval            Måndag vecka 35
+Lördag  - fortsätta med veckans uppgifter som inte är klara                     Lördag vecka 34
+Söndag  - fortsätta med veckans uppgifter som inte är klara                     Söndag vecka 34
+vecka 35
+Måndag  - fortsätta med språkval och börja med json filer                       Måndag vecka 35
+Tisdag  - fortsätta med json filer och börja med webbläsar redigering           Tisdag vecka 35
+Onsdag  
+Torsdag
+Fredag
+Lördag
+Söndag
+vecka 36
+Måndag
+Tisdag
+Onsdag  - sista finslipet av projektet                                        Onsdag vecka 36                  
+Torsdag - Förberedelse inför presentation                                     Torsdag vecka 36
+Fredag  - Presentation                                                        Fredag vecka 36
+
+
+
+
+Önskningar
+- olika tecken gör olika format Obsidian
+  "# rubrik"
+  "## underrubrik"
+  "### liten rubrik"
+  "- punktlista"
+  "**fet text**"
+  "*kursiv text*"
+
+
+
+- ha en personlig inloggnings kod
+
+Krav
+- kunna läsa och skriva i en ini fil
+- kunna redigera och skriva från webbläsare
+- skickas till servern genom json filer
+- kunna visa på engelska eller svenska
+- en ini fil
+
+
+
+Format
+
+Css -  kebab-case
+Html - camelCase
+Javascript - camelCase
+Php - camelCase
+ini - _underscore_case
