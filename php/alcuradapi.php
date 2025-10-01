@@ -2,6 +2,12 @@
 include 'requests.php';
 
 header("Content-Type: application/json");
+// ensure post
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Method Not Allowed
+    echo json_encode(["error" => "Only POST requests are allowed."]);
+    exit;
+}
 
 // 1. Get JSON input
 $input = file_get_contents("php://input");

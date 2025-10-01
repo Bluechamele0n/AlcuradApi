@@ -1,18 +1,11 @@
 <?php
 
-include 'util.php';
-include 'dokumenthandler.php';
-include 'pagehandler.php';
-include 'languagehandler.php';
-include 'profilehandler.php';
+include __DIR__.'/pagehandler.php';
 
 
 header("Content-Type: application/json");
 
-echo json_encode([
-    "status" => "success",
-    "message" => "This is a placeholder response from requests.php"
-]);
+
 
 
 
@@ -24,7 +17,7 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
     // get all keys in content
     if ($key === null or $key === '') {
         http_response_code(400);
-        return ["error" => "Missing 'key' parameter."];
+        return ["error" => "Missing 'key' field."];
     } elseif ($request === "listKeys" && $key === "admin") {
         foreach ($content as $section => $data) {
             if (isset($data['key']) and $data['key'] === $key) {
@@ -36,7 +29,7 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
         // if password for userid exists in content.ini and matches set $correctPassword = true
         if ($password === null or $password === '' and $userId === null or $userId === '') {
             http_response_code(400);
-            return ["error" => "wrong 'password' or userid parameter."];
+            return ["error" => "wrong 'password' or userid field."];
         } else {
             if (isset($content[$userId]) and isset($content[$userId]['password']) and $content[$userId]['password'] === $password) {
                 $correctPassword = true;
@@ -50,7 +43,7 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
         
         if ($request === null or $request === '' or $correctPassword === false) {
             http_response_code(400);
-            return ["error" => "Missing 'request' parameter."];
+            return ["error" => "Missing 'request' field."];
         } elseif ($correctPassword === true) {
             if ($request === "getDocument") { getPage($requestedPage, $userId, $content, $lang);
             } elseif ($request === "listLanguages") {
@@ -90,7 +83,7 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
         } elseif ($request === "addUser") {
             if ($userId === null or $userId === '' or $password === null or $password === '') {
                 http_response_code(400);
-                return ["error" => "Missing 'userId' or 'password' parameter."];
+                return ["error" => "Missing 'userId' or 'password' field."];
             } else { addUserWithPasswordAndOrglanguages($userId, $password);}
         } else {
             http_response_code(400);
@@ -109,7 +102,7 @@ function listUsers() {
 function getPage($requestedPage, $userId, $content, $lang) {
     if ($requestedPage === null or $requestedPage === '') {
         http_response_code(400);
-        return ["error" => "Missing 'requestedPage' parameter."];
+        return ["error" => "Missing 'requestedPage' field."];
     }
     if (!isset($content[$userId][$requestedPage])) {
         http_response_code(404);

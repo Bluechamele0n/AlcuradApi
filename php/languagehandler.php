@@ -3,7 +3,7 @@
 $content = parse_ini_file(__DIR__ . "/../content.ini", true, INI_SCANNER_RAW);
 if ($content === false) exit("Error: Unable to load content.ini file.");
 
-
+include __DIR__.'/util.php';
 
 
 function languageVersions($language) {
@@ -83,6 +83,8 @@ function whatLanguage() {
     if (isset($_POST['language'])) {
         $language = $_POST['language'];
         return $language;
+    } elseif (isset($_SESSION['langId'])) {
+        return $_SESSION['langId'];
     } else {
         return "eng"; // Default language
     }

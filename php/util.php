@@ -2,9 +2,9 @@
 
 if (!function_exists('writeIni')) {
     function writeIni(array $content): void {
-        echo "<pre>";
-        print_r($content);
-        echo "</pre>";
+        // echo "<pre>";
+        // print_r($content);
+        // echo "</pre>";
         $ini = "";
         foreach ($content as $section => $docs) {
             $ini .= "[{$section}]\n";
@@ -17,9 +17,9 @@ if (!function_exists('writeIni')) {
             }
             $ini .= "\n";
         }
-        echo "<pre>";
-        echo htmlspecialchars($ini);
-        echo "</pre>";
+        // echo "<pre>";
+        // echo htmlspecialchars($ini);
+        // echo "</pre>";
 
         file_put_contents("content.ini", $ini);
     }

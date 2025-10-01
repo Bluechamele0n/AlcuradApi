@@ -2,6 +2,7 @@
 $content = parse_ini_file(__DIR__ . "/../content.ini", true, INI_SCANNER_RAW);
 if ($content === false) exit("Error: Unable to load content.ini file.");
 
+include __DIR__ . '/util.php';
 
 // writeIni comes from php/util.php
 
@@ -79,6 +80,8 @@ if (isset($_POST['saveDoc'])) {
     }
 
     $content[$userId][$docName] = $rebuilt;
+    // show the content of the document in a readable way
+
     writeIni($content);
     echo "<p><strong>Saved to INI!</strong></p>";
 }
@@ -122,9 +125,9 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
 
         <div id="livePreview" style="width:33%; height:400px; border:1px solid #ccc; padding:10px; overflow:auto; font-family:monospace; background:#f9f9f9;"></div>
 
-        <pre>
+        <!-- <pre>
         <div id="jsonPreview" style="width:200px; height:450px; border:1px solid #ccc; padding:10px; overflow:auto; font-family:monospace; background:#eef;"></div>
-        </pre>
+        </pre> -->
     </div>
     <br>
     <button type="submit" name="saveDoc">Save to INI</button>
@@ -258,4 +261,125 @@ function removeDocument($userid, $removeDocName, $fromapi = false) {
         $content = parse_ini_file(__DIR__ . "/../content.ini", true);
         if (!$fromapi) {page("user", $userid);} else {return ["success" => "Document " . htmlspecialchars($removeDocName) . " removed."];}
     } elseif (!$fromapi) {echo "Document " . htmlspecialchars($removeDocName) . " not found.";} else {return ["error" => "Document " . htmlspecialchars($removeDocName) . " not found."];}
+}
+
+
+function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
+    // shows the selected document in its html version
+    global $content;
+    
+    if (!isset($content[$userId][$selectedDoc])) {
+        echo "<div style='padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;'>";
+        echo "<h3>Error: Document not found</h3>";
+        echo "<p>Document '" . htmlspecialchars($selectedDoc) . "' not found for user '" . htmlspecialchars($userId) . "'.</p>";
+        echo "</div>";
+        showNavigationButtons($userId, $langId);
+        return;
+    }
+    
+    $docContent = $content[$userId][$selectedDoc];
+    if (is_string($docContent)) $docContent = json_decode($docContent, true);
+    if (!is_array($docContent)) {
+        echo "<div style='padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;'>";
+        echo "<h3>Error: Invalid document format</h3>";
+        echo "<p>The document format is invalid and cannot be displayed.</p>";
+        echo "</div>";
+        showNavigationButtons($userId, $langId);
+        return;
+    }
+    
+    // Get selected language or default to first available
+    $selectedLang = $langId;
+    if ($selectedLang === null) {
+        $selectedLang = isset($_POST['langId']) ? $_POST['langId'] : 'eng';
+    }
+    
+    // Find content for the selected language
+    $langContent = [];
+    $availableLanguages = [];
+    
+    foreach ($docContent as $langObj) {
+        if (is_array($langObj)) {
+            foreach ($langObj as $langKey => $langValue) {
+                $availableLanguages[] = $langKey;
+                if ($langKey === $selectedLang && is_array($langValue)) {
+                    $langContent = $langValue;
+                }
+            }
+        }
+    }
+    
+    // Display document header with language selector
+    echo '<div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    echo '<div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid #ddd; border-radius: 8px 8px 0 0;">';
+    echo '<h2 style="margin: 0 0 10px 0; color: #333;">' . htmlspecialchars($selectedDoc) . '</h2>';
+    echo '<p style="margin: 0; color: #666;">User: ' . htmlspecialchars($userId) . '</p>';
+    
+    // Language selector
+    if (count($availableLanguages) > 1) {
+        echo '<form method="POST" action="" style="margin-top: 10px;">';
+        echo '<label for="docLangSelect" style="font-weight: bold;">Language:</label> ';
+        echo '<select name="langId" id="docLangSelect" onchange="this.form.submit()" style="margin-left: 5px; padding: 3px;">';
+        foreach ($availableLanguages as $lang) {
+            $selected = ($lang === $selectedLang) ? 'selected' : '';
+            echo '<option value="' . htmlspecialchars($lang) . '" ' . $selected . '>' . htmlspecialchars(strtoupper($lang)) . '</option>';
+        }
+        echo '</select>';
+        echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userId) . '">';
+        echo "<input type='hidden' name='viewDoc' value='1'>";
+        echo '<input type="hidden" name="docButton" value="' . htmlspecialchars($selectedDoc) . '">';
+        echo '</form>';
+    }
+    echo '</div>';
+    
+    // Display document content
+    echo '<div style="padding: 20px; font-family: Arial, sans-serif; line-height: 1.6;">';
+    
+    if (empty($langContent)) {
+        echo '<div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; color: #856404;">';
+        echo '<h4>No content available</h4>';
+        echo '<p>This document has no content in the selected language (' . htmlspecialchars(strtoupper($selectedLang)) . ').</p>';
+        echo '</div>';
+    } else {
+        foreach ($langContent as $block) {
+            if (!is_array($block)) continue;
+            
+            foreach ($block as $key => $value) {
+                if ($key === "h1") {
+                    echo "<h1 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin: 20px 0 15px 0;'>" . htmlspecialchars($value) . "</h1>";
+                } elseif ($key === "h2") {
+                    echo "<h2 style='color: #34495e; margin: 15px 0 10px 0;'>" . htmlspecialchars($value) . "</h2>";
+                } elseif ($key === "p") {
+                    // Convert markdown-like syntax to HTML
+                    $formatted = htmlspecialchars($value);
+                    $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+                    $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
+                    $formatted = preg_replace('/__(.*?)__/', '<u>$1</u>', $formatted);
+                    $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
+                    $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
+                    echo "<p style='margin: 10px 0; color: #2c3e50;'>" . $formatted . "</p>";
+                } elseif ($key === "n") {
+                    echo "<br>";
+                }
+            }
+        }
+    }
+    
+    echo '</div>';
+    echo '</div>';
+    
+    // Navigation buttons
+    showNavigationButtons($userId, $selectedLang);
+}
+
+function showNavigationButtons($userId, $langId = null) {
+    echo '<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">';
+    echo '<h4 style="margin: 0 0 10px 0; color: #495057;">Navigation</h4>';
+    
+    echo '<form method="post" style="display: inline-block;">';
+    if ($langId) echo '<input type="hidden" name="langId" value="' . htmlspecialchars($langId) . '">';
+    echo '<button type="submit" name="logoutButton" style="padding: 8px 15px; background:rgb(114, 26, 172); color: white; border: none; border-radius: 4px; cursor: pointer;">Back to homepage</button>';
+    echo '</form>';
+    
+    echo '</div>';
 }

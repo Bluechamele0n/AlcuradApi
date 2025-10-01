@@ -2,12 +2,10 @@
 <html lang="en">
     <?php
     // shared utilities
-    include 'php/util.php';
+
     // get content from hompage.php
     include 'php/pagehandler.php';
-    include 'php/dokumenthandler.php';
-    include 'php/profilehandler.php';
-    include 'php/languagehandler.php';
+
     //include 'php/alcuradapi.php';
     ?>
 <head>
@@ -20,7 +18,7 @@
     //print_r($_POST);
 
     // Handle the button click
-    page("home");
+    requests();
     ?>
 </body>
 </html>
