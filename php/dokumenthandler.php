@@ -239,7 +239,7 @@ function addNewDocument($userid, $NewDocName, $fromapi = false) {
 }
 
 
-function removeDocument($userid, $removeDocName, $fromapi = false) {
+function removeDocument($userid, $removeDocName, $fromapi = false, $lang = null) {
     global $content;
     if (!$fromapi) {
         page("user", $userid);
@@ -255,11 +255,34 @@ function removeDocument($userid, $removeDocName, $fromapi = false) {
                 }
             }
         }
-        unset($content[$userid][$removeDocName]);
-        if (!$fromapi){echo "Document " . htmlspecialchars($removeDocName) . " removed.";}
-        writeIni($content);
-        $content = parse_ini_file(__DIR__ . "/../content.ini", true);
-        if (!$fromapi) {page("user", $userid);} else {return ["success" => "Document " . htmlspecialchars($removeDocName) . " removed."];}
+        // lang exists and fromapi for document and isnt null then only remove that lang else remove whole document
+        if ($lang !== null && $fromapi) {
+            if (isset($content[$userid][$removeDocName]) && is_array($content[$userid][$removeDocName])) {
+                $newDocContent = [];
+                foreach ($content[$userid][$removeDocName] as $langObj) {
+                    if (is_array($langObj)) {
+                        foreach ($langObj as $k => $v) {
+                            if ($k !== $lang) {
+                                $newDocContent[] = [$k => $v];
+                            }
+                        }
+                    }
+                }
+                $content[$userid][$removeDocName] = $newDocContent;
+                writeIni($content);
+                return ["success" => "Language " . htmlspecialchars($lang) . " removed from document " . htmlspecialchars($removeDocName) . "."];
+            } else {
+                return ["error" => "Document " . htmlspecialchars($removeDocName) . " not found."];
+            }
+        } else {
+            unset($content[$userid][$removeDocName]);
+            writeIni($content);
+            if (!$fromapi) {echo "Document " . htmlspecialchars($removeDocName) . " removed.";}
+            else {return ["success" => "Document " . htmlspecialchars($removeDocName) . " removed."];}
+        }
+
+        
+
     } elseif (!$fromapi) {echo "Document " . htmlspecialchars($removeDocName) . " not found.";} else {return ["error" => "Document " . htmlspecialchars($removeDocName) . " not found."];}
 }
 

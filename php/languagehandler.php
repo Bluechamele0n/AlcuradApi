@@ -50,20 +50,28 @@ function addLang($userId, $newLangCode) {
     // Get current languages
     $currentLangs = [];
     if (isset($content[$userId]['languages'])) {
-        $currentLangs = json_decode($content[$userId]['languages'], true);
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($currentLangs)) {
+        if (is_string($content[$userId]['languages'])) {
+            $currentLangs = json_decode($content[$userId]['languages'], true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($currentLangs)) {
+                $currentLangs = [];
+            }
+        } elseif (is_array($content[$userId]['languages'])) {
+            // already decoded
+            $currentLangs = $content[$userId]['languages'];
+        } else {
             $currentLangs = [];
         }
     }
-
     
     
     // decode json inside INI
     foreach ($content as $section => &$docs) {
         foreach ($docs as $key => &$value) {
-            $decoded = json_decode($value, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $value = $decoded;
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $decoded;
+                }
             }
         }
     }
@@ -108,18 +116,28 @@ function removeLang($userId, $lang, $api = false) {
     // Get current languages
     $currentLangs = [];
     if (isset($content[$userId]['languages'])) {
-        $currentLangs = json_decode($content[$userId]['languages'], true);
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($currentLangs)) {
+        if (is_string($content[$userId]['languages'])) {
+            $currentLangs = json_decode($content[$userId]['languages'], true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($currentLangs)) {
+                $currentLangs = [];
+            }
+        } elseif (is_array($content[$userId]['languages'])) {
+            // already decoded
+            $currentLangs = $content[$userId]['languages'];
+        } else {
             $currentLangs = [];
         }
     }
-
+    
+    
     // decode json inside INI
     foreach ($content as $section => &$docs) {
         foreach ($docs as $key => &$value) {
-            $decoded = json_decode($value, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $value = $decoded;
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $decoded;
+                }
             }
         }
     }

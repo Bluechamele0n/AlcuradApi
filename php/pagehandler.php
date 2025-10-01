@@ -1,8 +1,8 @@
 <?php
 
-include 'php/dokumenthandler.php';
-include 'php/profilehandler.php';
-include 'php/languagehandler.php';
+include 'dokumenthandler.php';
+include 'profilehandler.php';
+include 'languagehandler.php';
 
 
 session_start();
@@ -19,6 +19,7 @@ foreach ($content as $section => $docs) {
         if (json_last_error() === JSON_ERROR_NONE) $content[$section][$key] = $decoded;
     }
 }
+
 
 requests();
 
@@ -38,22 +39,23 @@ if (!isset($_SESSION['langId'])) {
 // if start dont exists, go to homepage
 // if from php file request do not open homepage
 
-
-$backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-$includedFrom = $backtrace[1]['file'] ?? null;
-
-if ($includedFrom !== __DIR__ . '/php/pagehandler.php') {
-    if (!isset($_POST['homepage']) && !isset($_POST['loginButton']) && !isset($_POST['registerButton']) 
-        && !isset($_POST['changePasswordButton']) && !isset($_POST['docButton']) 
-        && !isset($_POST['addDocButton']) && !isset($_POST['removeDocButton']) 
-        && !isset($_POST['saveDoc']) && !isset($_POST['backDocButton']) 
-        && !isset($_POST['accountRemoveButton']) && !isset($_POST['logoutButton']) 
-        && !isset($_POST['userPageLangChange']) && !isset($_POST['homepageLangChange']) 
-        && !isset($_POST['addLang'])) {
-            page("home", null, null, $_SESSION['langId']);
+function webbsite() {
+    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $includedFrom = $backtrace[1]['file'] ?? null;
+    echo "<!-- Included from: " . htmlspecialchars($includedFrom) . " -->"; // Debug info
+    if ($includedFrom !== __DIR__ . '/php/pagehandler.php') {
+        if (!isset($_POST['homepage']) && !isset($_POST['loginButton']) && !isset($_POST['registerButton']) 
+            && !isset($_POST['changePasswordButton']) && !isset($_POST['docButton']) 
+            && !isset($_POST['addDocButton']) && !isset($_POST['removeDocButton']) 
+            && !isset($_POST['saveDoc']) && !isset($_POST['backDocButton']) 
+            && !isset($_POST['accountRemoveButton']) && !isset($_POST['logoutButton']) 
+            && !isset($_POST['userPageLangChange']) && !isset($_POST['homepageLangChange']) 
+            && !isset($_POST['addLang']) && !isset($_POST['removeLangbutton']) && !isset($_POST['apiVersion'])) {
+                page("home", null, null, $_SESSION['langId']);
+        }
     }
-}
 
+}
 function page($page, $yourId = null, $docName = null, $langId = null) {
     global $content;
 
@@ -152,6 +154,7 @@ function openUserPage($userid) {
     echo '<input type="text" name="newLangCode" placeholder="Language Code (e.g., fra, deu)" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; flex: 1; max-width: 200px;">';
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
     echo '<button type="submit" name="addLang" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Add Language</button>';
+    echo '<button type="submit" name="removeLangbutton" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Remove Language</button>';
     echo '</form>';
     echo '<p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">Current language: ' . ($_POST['langId']) . '</p>';
     echo '</div>';
@@ -414,12 +417,30 @@ function requests() {
         $newLangCode = htmlspecialchars($_POST['newLangCode']);
         if (!empty($newLangCode)) {
             if (function_exists('addLang')) {
+                echo "Adding language: " . htmlspecialchars($newLangCode) . " to user: " . htmlspecialchars($userId);
                 addLang($userId, $newLangCode);
             } else {
                 echo "Error: addLang function not found.";
             }
         } else {
             echo "Error: Language code cannot be empty.";
+        }
+        page("user", $userId);
+        $_POST = []; // to prevent re-submission
+    }
+    if // remove lang
+    ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removeLangbutton'])) {
+        $userId = htmlspecialchars($_POST['userId']);
+        $langToRemove = isset($_POST['langId']) ? htmlspecialchars($_POST['langId']) : null;
+        if (!empty($langToRemove)) {
+            if (function_exists('removeLang')) {
+                echo "Removing language: " . htmlspecialchars($langToRemove) . " from user: " . htmlspecialchars($userId);
+                removeLang($userId, $langToRemove);
+            } else {
+                echo "Error: removeLang function not found.";
+            }
+        } else {
+            echo "Error: Language code to remove cannot be empty.";
         }
         page("user", $userId);
         $_POST = []; // to prevent re-submission

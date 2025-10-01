@@ -18,6 +18,8 @@
     //print_r($_POST);
 
     // Handle the button click
+    
+    webbsite();
     requests();
     ?>
 </body>
