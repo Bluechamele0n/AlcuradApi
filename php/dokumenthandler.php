@@ -9,11 +9,15 @@ include __DIR__ . '/util.php';
 // Decode JSON inside INI
 foreach ($content as $section => $docs) {
     foreach ($docs as $key => $value) {
-        $decoded = json_decode($value, true);
-        if (json_last_error() === JSON_ERROR_NONE) $content[$section][$key] = $decoded;
-        
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $content[$section][$key] = $decoded;
+            }
+        }
     }
 }
+
 
 
 function openDocument($docName, $userId, $langId = null) {
@@ -206,37 +210,43 @@ HTML;
 
 function addNewDocument($userid, $NewDocName, $fromapi = false) {
     global $content;
+
     if (!$fromapi) {
         page("user", $userid);
     }
-    if (!isset($content[$userid][$NewDocName])) {
-        // Store as array, not JSON string
-        // add json key called language with value eng and one with sve
 
+    if (!isset($content[$userid][$NewDocName])) {
+        // Safely decode JSON-looking values
         foreach ($content as $section => &$docs) {
             foreach ($docs as $key => &$value) {
-                $decoded = json_decode($value, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $value = $decoded;
+                if (is_string($value)) { // only decode strings
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $value = $decoded;
+                    }
                 }
             }
         }
 
-        $content[$userid][$NewDocName] = [["eng" => []], ["sve" => []]];
+        // Create new doc with language keys
+        $content[$userid][$NewDocName] = [
+            "eng" => [],
+            "sve" => []
+        ];
 
         writeIni($content);
+
         if (!$fromapi) {
-                echo "Document " . htmlspecialchars($NewDocName) . " added.";
-                page("user", $userid);
+            echo "Document " . htmlspecialchars($NewDocName) . " added.";
+            page("user", $userid);
         }
     } elseif (!$fromapi) {
         echo "Document " . htmlspecialchars($NewDocName) . " already exists.";
     } else {
-        if ($fromapi) {
-            return ["error" => "Document " . htmlspecialchars($NewDocName) . " already exists."];
-        }
+        return ["error" => "Document " . htmlspecialchars($NewDocName) . " already exists."];
     }
 }
+
 
 
 function removeDocument($userid, $removeDocName, $fromapi = false, $lang = null) {
@@ -249,12 +259,15 @@ function removeDocument($userid, $removeDocName, $fromapi = false, $lang = null)
         // Decode JSON-looking strings back to arrays
         foreach ($content as $section => &$docs) {
             foreach ($docs as $key => &$value) {
-                $decoded = json_decode($value, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $value = $decoded;
+                if (is_string($value)) { // only attempt to decode strings
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $value = $decoded;
+                    }
                 }
             }
         }
+        
         // lang exists and fromapi for document and isnt null then only remove that lang else remove whole document
         if ($lang !== null && $fromapi) {
             if (isset($content[$userid][$removeDocName]) && is_array($content[$userid][$removeDocName])) {
@@ -405,4 +418,73 @@ function showNavigationButtons($userId, $langId = null) {
     echo '</form>';
     
     echo '</div>';
+}
+
+
+
+
+
+function updateDocument($requestedPage = null, $lang = 'all', $userId, $newContent = null) {
+    global $content;
+
+    if ($requestedPage === null) {
+        return ["error" => "No document specified."];
+    }
+    if (!isset($content[$userId][$requestedPage])) {
+        return ["error" => "Document not found."];
+    }
+    if ($newContent === null) {
+        return ["error" => "No new content provided."];
+    }
+
+    // Decode new content safely
+    if (is_array($newContent)) {
+        $decodedContent = $newContent;
+    } else {
+        $decodedContent = json_decode($newContent, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return ["error" => "Invalid JSON provided: " . json_last_error_msg()];
+        }
+    }
+
+    // Decode existing document content
+    $existingContent = $content[$userId][$requestedPage];
+    if (is_string($existingContent)) {
+        $existingContent = json_decode($existingContent, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $existingContent = [];
+        }
+    }
+    if (!is_array($existingContent)) {
+        $existingContent = [];
+    }
+
+    if ($lang === 'all') {
+        // Replace entire document
+        $content[$userId][$requestedPage] = $decodedContent;
+    } else {
+        // Normalize structure → ensure $existingContent is an array of lang objects
+        if (!isset($existingContent[0]) || !is_array($existingContent[0])) {
+            $existingContent = [];
+        }
+
+        $langFound = false;
+        foreach ($existingContent as &$langObj) {
+            if (is_array($langObj) && array_key_exists($lang, $langObj)) {
+                // Update this language with new content
+                $langObj[$lang] = $decodedContent;
+                $langFound = true;
+                break;
+            }
+        }
+        if (!$langFound) {
+            // Add a new language object if not found
+            $existingContent[] = [$lang => $decodedContent];
+        }
+
+        $content[$userId][$requestedPage] = $existingContent;
+    }
+
+    writeIni($content);
+    return ["success" => "Document updated successfully."];
 }

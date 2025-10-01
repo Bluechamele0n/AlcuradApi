@@ -39,16 +39,75 @@ function addUserWithPasswordAndOrglanguages($newUserId, $newPassword) {
         echo "Error: User ID already exists.";
         return false;
     }
+    // do random japanese characters as key that not already exists and is 32 chars long and turn into a string
+
+    $key = generateUniqueKey($content);
+    if ($key === null) {
+        echo "Error: Unable to generate a unique key.";
+        return false;
+    }
 
     // Build append text: section + password only
-    $append = "\n[{$newUserId}]\npassword = \"" . str_replace(["\n", "\r"], '', (string)$newPassword) . "\"\n"  . "languages = " . json_encode(['eng', 'sve'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    $append = "\n[{$newUserId}]\n"
+    . "key = \"" . str_replace(["\n", "\r"], '', (string)$key) . "\"\n"
+    . "password = \"" . str_replace(["\n", "\r"], '', (string)$newPassword) . "\"\n"
+    . "languages = " . json_encode(['eng', 'sve'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+
     file_put_contents(__DIR__ . "/../content.ini", $append, FILE_APPEND);
 
     // Reload RAW
     $content = parse_ini_file(__DIR__ . "/../content.ini", true, INI_SCANNER_RAW);
    // echo "User ID " . htmlspecialchars($newUserId) . " added successfully.";
-    return true;
+    // return the key in json format
+    return ["key" => $key];
 }
+
+function generateUniqueKey($content) {
+    // Allowed character ranges (Hiragana, Katakana, Kanji) – precomposed only
+    $chars = [];
+
+    // Hiragana (U+3041 – U+3096, skipping combining marks U+3099–U+309C)
+    foreach (range(0x3041, 0x3096) as $code) {
+        $chars[] = mb_chr($code, 'UTF-8');
+    }
+
+    // Katakana (U+30A1 – U+30FA)
+    foreach (range(0x30A1, 0x30FA) as $code) {
+        $chars[] = mb_chr($code, 'UTF-8');
+    }
+    // Add Katakana small KE (ヵ) and small KA (ヶ)
+    $chars[] = mb_chr(0x30F5, 'UTF-8'); // ヵ
+    $chars[] = mb_chr(0x30F6, 'UTF-8'); // ヶ
+
+    // Full-width prolonged sound mark (ー), iteration mark (々), middle dot (・)
+    $chars[] = 'ー';
+    $chars[] = '々';
+    $chars[] = '・';
+
+    // Kanji (basic CJK unified ideographs U+4E00 – U+9FFF)
+    foreach (range(0x4E00, 0x9FFF) as $code) {
+        $chars[] = mb_chr($code, 'UTF-8');
+    }
+
+    // Collect all existing keys
+    $existingKeys = [];
+    foreach ($content as $userId => $userData) {
+        if (isset($userData['key'])) {
+            $existingKeys[] = (string)$userData['key'];
+        }
+    }
+
+    // Generate until unique
+    do {
+        $newKey = '';
+        for ($i = 0; $i < 32; $i++) {
+            $newKey .= $chars[random_int(0, count($chars) - 1)];
+        }
+    } while (in_array($newKey, $existingKeys, true));
+
+    return $newKey;
+}
+
 
 
 function removeUser($userId) {
@@ -74,10 +133,11 @@ function removeUser($userId) {
 
     // Remove the user section
     unset($content[$userId]);
-
+    //var_dump($content);
     writeIni($content);
-
+    //var_dump($content);
     echo "User ID " . htmlspecialchars($userId) . " removed successfully.";
+    
 }
 
 

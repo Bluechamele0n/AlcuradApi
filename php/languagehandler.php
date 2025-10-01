@@ -171,10 +171,12 @@ function removeLang($userId, $lang, $api = false) {
 }
 
 
-function hasLang($userId, $api = false) {
+function hasLang($userId = null, $api = false, $lang = null) {
+    
+    
     global $content;
 
-    if (!isset($content[$userId])) {
+    if (!isset($content[$userId]) && $userId !== null) {
         if ($api) {
             http_response_code(400);
             return ["error" => "User ID does not exist."];
@@ -200,3 +202,58 @@ function hasLang($userId, $api = false) {
         return true;
     }
 }
+
+
+function listLanguages($userId = null, $lang = 'all', $api = false) {
+    global $content;
+
+    // helper to decode languages safely
+    $getUserLangs = function($uid) {
+        if (!isset($GLOBALS['content'][$uid]['languages'])) return [];
+        $langs = $GLOBALS['content'][$uid]['languages'];
+        if (is_string($langs)) {
+            $langs = json_decode($langs, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($langs)) return [];
+        }
+        return is_array($langs) ? $langs : [];
+    };
+
+    // Case 1: Both userId + lang → return bool
+    if ($userId !== null && $lang !== 'all') {
+        if (!isset($content[$userId])) return $api ? ["error" => "User ID does not exist."] : false;
+        return in_array($lang, $getUserLangs($userId), true);
+    }
+
+    // Case 2: Only userId → return all languages that user has
+    if ($userId !== null && $lang === 'all') {
+        if (!isset($content[$userId])) return $api ? ["error" => "User ID does not exist."] : false;
+        $langs = $getUserLangs($userId);
+        return $api ? ["languages" => $langs] : $langs;
+    }
+
+    // Case 3: Only lang → return all users who have it
+    if ($userId === null && $lang !== 'all') {
+        $usersWithLang = [];
+        foreach ($content as $uid => $data) {
+            if (in_array($lang, $getUserLangs($uid), true)) {
+                $usersWithLang[] = $uid;
+            }
+        }
+        return $api ? ["users" => $usersWithLang] : $usersWithLang;
+    }
+
+    // Case 4: Neither → list all languages anyone has
+    $allLangs = [];
+    foreach ($content as $uid => $data) {
+        foreach ($getUserLangs($uid) as $l) {
+            $allLangs[$l] = true; // prevent duplicates
+        }
+    }
+    $allLangs = array_keys($allLangs);
+    return $api ? ["languages" => $allLangs] : $allLangs;
+}
+
+
+
+
+

@@ -10,23 +10,24 @@ header("Content-Type: application/json");
 
 
 
-function getcontent($request = null,$requestedPage = null, $userId = null, $lang = "all", $password = null, $key = null) {
+function getcontent($request = null,$requestedPage = null, $userId = null, $lang = "all", $password = null, $key = null, $newContent = null) {
+    // Load the INI file with sections and raw values
     $content = parse_ini_file(__DIR__ . "/../content.ini", true, INI_SCANNER_RAW);
     
     
 
     // get all keys in content
-    if ($key === null or $key === '') {
-        http_response_code(400);
-        return ["error" => "Missing 'key' field."];
-    } elseif ($request === "listKeys" && $key === "admin") {
-        foreach ($content as $section => $data) {
-            if (isset($data['key']) and $data['key'] === $key) {
-                // Found the key, return the section name
-                return ["key" => $section];
-            }
-        }
-    } 
+    // if ($key === null or $key === '') {
+    //     http_response_code(400);
+    //     return ["error" => "Missing 'key' field."];
+    // } elseif ($request === "listKeys" && $key === "admin") {
+    //     foreach ($content as $section => $data) {
+    //         if (isset($data['key']) and $data['key'] === $key) {
+    //             // Found the key, return the section name
+    //             return ["key" => $section];
+    //         }
+    //     }
+    // } 
  
     if ($request === null or $request === '') {
         http_response_code(400);
@@ -36,13 +37,20 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
             $profileLogin = passwordAndKeyController($key, $userId, $password);
             $userId = $profileLogin[0];
             $password = $profileLogin[1];
-            getPage($requestedPage, $userId, $content, $lang);
+            $response = getPage($requestedPage, $userId, $content, $lang);
+            //var_dump($response);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         } elseif ($request === "updateDocument") {
+            if ($newContent === null or $newContent === '') {
+                http_response_code(400);
+                return ["error" => "Missing 'newContent' field."];
+            }
+
             $profileLogin = passwordAndKeyController($key, $userId, $password);
             $userId = $profileLogin[0];
             $password = $profileLogin[1];
 
-            updateDocument($requestedPage, $lang ,$userId, $password);
+            updateDocument($requestedPage, $lang ,$userId, $newContent);
         } elseif ($request === "addDocument") {
             $profileLogin = passwordAndKeyController($key, $userId, $password);
             $userId = $profileLogin[0];
@@ -54,7 +62,7 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
             $password = $profileLogin[1];
             removeDocument($requestedPage, $userId, true, $lang);
         } elseif ($request === "listLanguages") {
-            hasLang($userId, true);
+            return listLanguages($userId, $lang, true);
         } elseif ($request === "addLanguage" && $lang !== null and $lang !== '') {
             $profileLogin = passwordAndKeyController($key, $userId, $password);
             $userId = $profileLogin[0];
@@ -80,13 +88,25 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
         } elseif ($request === "listDocuments") {
             listDocuments($userId, $lang);
         } elseif ($request === "listUsers") {
-            listUsers();
+            return listUsers($userId);
         } elseif ($request === "addUser") {
             if ($userId === null or $userId === '' or $password === null or $password === '') {
                 http_response_code(400);
                 return ["error" => "Missing 'userId' or 'password' field."];
-            } else { addUserWithPasswordAndOrglanguages($userId, $password);}
+            } else {$key = addUserWithPasswordAndOrglanguages($userId, $password);
+                return $key;
+            }
         } elseif ($request === "removeUser") { 
+
+            $profileLogin = passwordAndKeyController($key, $userId, $password);
+            $userId = $profileLogin[0];
+            $password = $profileLogin[1];
+            // return they key 
+            //return ["key" => $key, "userId" => $userId, "password" => $password];
+            if (ifKeyExists($userId, $key) === false) {
+                http_response_code(403);
+                return ["error" => "Only User with thier key can remove users."];
+            }
             removeUser($userId);
         } else {
             http_response_code(400);
@@ -96,9 +116,46 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
     
 }
 
-function listUsers() {
+function ifKeyExists($userId = null, $key = null) {
     global $content;
-    $users = array_keys($content);
+    if ($userId === null or $userId === '' or $key === null or $key === '') {
+        return false;
+    }
+
+    if (!isset($content[$userId]) || !isset($content[$userId]['key'])) {
+        return false;
+    }
+
+    // Normalize and trim both sides
+    $stored = trim(mb_convert_encoding($content[$userId]['key'], 'UTF-8', 'UTF-8'));
+    $given  = trim(mb_convert_encoding($key, 'UTF-8', 'UTF-8'));
+
+    // Strict string compare
+    // var_dump(bin2hex($stored));
+    // var_dump(bin2hex($given));
+    return $stored === $given;
+}
+
+
+
+
+function listUsers($userId = null) {
+    global $content;
+    // if userid == null list all users else only that user returns a bool if user exists
+    $users = [];
+    if ($userId === null or $userId === '') {
+        foreach ($content as $section => $data) {
+            if (isset($data['password']) and isset($data['key'])) {
+                $users[] = ["userId" => $section];
+            }
+        }
+    } else {
+        if (isset($content[$userId]) and isset($content[$userId]['password']) and isset($content[$userId]['key'])) {
+            return ["exists" => true];
+        } else {
+            return ["exists" => false];
+        }
+    }
     return ["users" => $users];
 }
 
@@ -143,26 +200,53 @@ function getPage($requestedPage, $userId, $content, $lang) {
 
 function listDocuments($userId = null, $lang = "all") {
     global $content;
-    // if userid == null list all documents for all users else only for that user
+    // if userid == null list all documents for all users else only for that user and if lang != all only list documents that have that language
+    $documents = [];
     if ($userId === null or $userId === '') {
-        $allDocs = [];
         foreach ($content as $section => $data) {
-            if (isset($data['key']) or isset($data['password'])) continue; // skip keys and passwords
-            $allDocs[$section] = array_keys($data);
+            foreach ($data as $key => $value) {
+                if ($key !== 'password' and $key !== 'key') {
+                    if ($lang === "all") {
+                        $documents[] = ["userId" => $section, "document" => $key];
+                    } else {
+                        $docContent = json_decode($value, true);
+                        if (is_array($docContent)) {
+                            foreach ($docContent as $langObj) {
+                                if (isset($langObj[$lang])) {
+                                    $documents[] = ["userId" => $section, "document" => $key];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        return ["documents" => $allDocs];
     } else {
         if (!isset($content[$userId])) {
             http_response_code(404);
-            return ["error" => "User ID not found."];
+            return ["error" => "User not found."];
         }
-        $userDocs = array_keys($content[$userId]);
-        // remove 'password' and 'languages' from list
-        $userDocs = array_filter($userDocs, function($doc) {
-            return $doc !== 'password' && $doc !== 'languages';
-        });
-        return ["documents" => [$userId => array_values($userDocs)]];
+        foreach ($content[$userId] as $key => $value) {
+            if ($key !== 'password' and $key !== 'key') {
+                if ($lang === "all") {
+                    $documents[] = ["userId" => $userId, "document" => $key];
+                } else {
+                    $docContent = json_decode($value, true);
+                    if (is_array($docContent)) {
+                        foreach ($docContent as $langObj) {
+                            if (isset($langObj[$lang])) {
+                                $documents[] = ["userId" => $userId, "document" => $key];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+    return ["documents" => $documents];
+    
 }
 
 

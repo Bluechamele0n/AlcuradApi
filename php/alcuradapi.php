@@ -27,9 +27,10 @@ $userId        = $data["userId"]        ?? null;
 $lang          = $data["lang"]          ?? "all";
 $password      = $data["password"]      ?? null;
 $key           = $data["key"]           ?? null;
+$newContent    = $data["newContent"]    ?? null;
 
 // 3. Call your main handler
-$result = getcontent($request, $requestedPage, $userId, $lang, $password, $key);
+$result = getcontent($request, $requestedPage, $userId, $lang, $password, $key, $newContent);
 
 // 4. Output the result (always JSON)
 echo json_encode($result, JSON_PRETTY_PRINT);

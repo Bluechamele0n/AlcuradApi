@@ -98,10 +98,20 @@ To keep it simple, if you leave `userId` empty you will get all documents saved 
     "key":"usersKey", 
     "request":"updateDocument",
     "requestedPage":"WhichUserDocument", 
-    "lang":"WhatLanguageVersion"
+    "lang":"WhatLanguageVersion",
+    "newContent":[{"h1":"Header "},{"h2":"Subheader"},{"p":"**Bold**"},{"p":"__Underscore__"},{"p":"*Italic*"},{"p":"~~drawn over~~"},{"p":"[Link](https:/www.example.se)"}] // with lang
+    
 }
 ```
-To update a document you need premission by using the `userId` and `password` or only their `key` othervise you will not be able to open the document/change the document. You also need to specifiy which by its `requestedPage` id/name and you can give the entire with all `lang`s or you can also chose a specific `lang` to update. And the `request` need to be `updateDocument`.
+```json
+{
+    "newContent": [{"eng": [{"h1": "Header"},{"h2": "Subheader"},{"p": "**Bold**"},{"p": "__Underscore__"},{"p": "*Italic*"},{"p": "~~drawn over~~"},{"p": "[Link](https:/www.example.se)"}]},
+    {"sve": [{"h1": "Rubrik"},{"h2": "Underrubrik"},{"p": "**Fetstil**"},{"p": "__Understrykning__"},{"p": "*Kursiv*"},{"p": "~~Överstruken~~"},{"p": "[Länk](https:/www.example.se)"}]},
+  {"jpn": [{"h1": "見出し"},{"h2": "小見出し"},{"p": "**太字**"},{"p": "__下線__"},{"p": "*斜体*"},{"p": "~~取り消し線~~"},{"p": "[リンク](https:/www.example.se)"}]}] // without lang
+}
+```
+
+To update a document you need premission by using the `userId` and `password` or only their `key` othervise you will not be able to open the document/change the document. You also need to specifiy which by its `requestedPage` id/name and you can give the entire with all `lang`s or you can also chose a specific `lang` to update. And the `request` need to be `updateDocument`. They new content for the document shall be the `value` of `newContent`.
 
 
 ### Add a document
