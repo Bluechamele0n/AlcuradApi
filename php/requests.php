@@ -13,21 +13,6 @@ header("Content-Type: application/json");
 function getcontent($request = null,$requestedPage = null, $userId = null, $lang = "all", $password = null, $key = null, $newContent = null) {
     // Load the INI file with sections and raw values
     $content = parse_ini_file(__DIR__ . "/../content.ini", true, INI_SCANNER_RAW);
-    
-    
-
-    // get all keys in content
-    // if ($key === null or $key === '') {
-    //     http_response_code(400);
-    //     return ["error" => "Missing 'key' field."];
-    // } elseif ($request === "listKeys" && $key === "admin") {
-    //     foreach ($content as $section => $data) {
-    //         if (isset($data['key']) and $data['key'] === $key) {
-    //             // Found the key, return the section name
-    //             return ["key" => $section];
-    //         }
-    //     }
-    // } 
  
     if ($request === null or $request === '') {
         http_response_code(400);
@@ -130,9 +115,6 @@ function ifKeyExists($userId = null, $key = null) {
     $stored = trim(mb_convert_encoding($content[$userId]['key'], 'UTF-8', 'UTF-8'));
     $given  = trim(mb_convert_encoding($key, 'UTF-8', 'UTF-8'));
 
-    // Strict string compare
-    // var_dump(bin2hex($stored));
-    // var_dump(bin2hex($given));
     return $stored === $given;
 }
 
@@ -141,7 +123,6 @@ function ifKeyExists($userId = null, $key = null) {
 
 function listUsers($userId = null) {
     global $content;
-    // if userid == null list all users else only that user returns a bool if user exists
     $users = [];
     if ($userId === null or $userId === '') {
         foreach ($content as $section => $data) {
@@ -200,7 +181,6 @@ function getPage($requestedPage, $userId, $content, $lang) {
 
 function listDocuments($userId = null, $lang = "all") {
     global $content;
-    // if userid == null list all documents for all users else only for that user and if lang != all only list documents that have that language
     $documents = [];
     if ($userId === null or $userId === '') {
         foreach ($content as $section => $data) {
@@ -252,7 +232,6 @@ function listDocuments($userId = null, $lang = "all") {
 
 
 function passwordAndKeyController($key = null, $userId = null, $password = null) {
-    // check if key is valid and converts it to a userId and password if not key provided check if userId and password are valid
     global $content;
     if ($key !== null and $key !== '') {
         foreach ($content as $section => $data) {
@@ -277,4 +256,4 @@ function passwordAndKeyController($key = null, $userId = null, $password = null)
         }
     }
 }
-// functions left are listDocuments, updateDocument, addDocument, removeDocument, addUserWithPasswordAndOrglanguages, removeUser
+

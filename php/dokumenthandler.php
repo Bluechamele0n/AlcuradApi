@@ -94,7 +94,7 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
     if (is_string($docBlocksForLang)) $docBlocksForLang = json_decode($docBlocksForLang, true);
     if (!is_array($docBlocksForLang)) $docBlocksForLang = [];
 
-    // Build editor text without adding extra \n at the end of each block
+    // Build editor text
     $text = "";
     $lastIndex = count($docBlocksForLang) - 1;
     foreach ($docBlocksForLang as $i => $block) {
@@ -105,44 +105,53 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
             elseif ($key === "p") $text .= $value;
             elseif ($key === "n") $text .= "";
         }
-        // only append newline if it’s not the last block
         if ($i !== $lastIndex) $text .= "\n";
     }
 
-    $text = htmlspecialchars($text);
     $jsonContent = json_encode($docBlocksForLang, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     echo <<<HTML
-<h2>Editing: {$docName}</h2>
-<form method="post">
-    <input type="hidden" name="docName" value="{$docName}">
-    <input type="hidden" name="userId" value="{$userId}">
-    <input type="hidden" name="langId" value="{$langId}">
-    <input type="hidden" id="tempJson" name="tempJson" value='<?php echo $jsonContent; ?>'>
+    
+<div class="container">
+    <div class="header-card">
+        <h1>Editing Document</h1>
+        <p>Document: <strong>{$docName}</strong></p>
+        <link rel="stylesheet" href="./css/pagescss.css">
+    </div>
 
-    <div style="display:flex; gap:20px;">
-        <div class="editor-container" style="width:33%; height:400px; font-family:monospace;">
-            <textarea id="editor" placeholder="Type here..." 
-                      style="width:100%; height:100%; background:#fff; color:black; border:1px solid #ccc;
-                             resize:none; font-family:monospace; white-space:pre-wrap; word-wrap:break-word;">{$text}</textarea>
+    <form method="post">
+        <input type="hidden" name="docName" value="{$docName}">
+        <input type="hidden" name="userId" value="{$userId}">
+        <input type="hidden" name="langId" value="{$langId}">
+        <input type="hidden" id="tempJson" name="tempJson" value='{$jsonContent}'>
+
+        <div class="form-row">
+            <div class="editor-container">
+                <textarea id="editor" placeholder="Type here...">{$text}</textarea>
+            </div>
+
+            <div class="preview-container">
+                <div id="livePreview"></div>
+                <pre>
+                    <div id="jsonPreview"></div>
+                </pre>
+                <button type="button" id="toggleJson">Toggle JSON Preview</button>
+            </div>
         </div>
 
-        <div id="livePreview" style="width:33%; height:400px; border:1px solid #ccc; padding:10px; overflow:auto; font-family:monospace; background:#f9f9f9;"></div>
-
-        <!-- <pre>
-        <div id="jsonPreview" style="width:200px; height:450px; border:1px solid #ccc; padding:10px; overflow:auto; font-family:monospace; background:#eef;"></div>
-        </pre> -->
-    </div>
-    <br>
-    <button type="submit" name="saveDoc">Save to INI</button>
-    <button type="submit" name="backDocButton">Back to Documents</button>
-</form>
+        <div class="form-buttons">
+            <button type="submit" name="saveDoc">💾 Save Document</button>
+            <button type="submit" name="backDocButton">⬅️ Back to Documents</button>
+        </div>
+    </form>
+</div>
 
 <script>
 const editor = document.getElementById("editor");
 const tempJsonInput = document.getElementById("tempJson");
 const livePreview = document.getElementById("livePreview");
 const jsonPreview = document.getElementById("jsonPreview");
+const toggleJson = document.getElementById("toggleJson");
 
 function escapeHtml(str) {
     return str.replace(/[&<>"']/g, tag =>
@@ -162,11 +171,11 @@ function updateTempJson() {
             continue;
         }
         if (line.startsWith("##")) {
-            jsonArray.push({h2: line.replace(/^##\\s*/, "")});
+            jsonArray.push({h2: line.replace(/^##\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
         } else if (line.startsWith("#")) {
-            jsonArray.push({h1: line.replace(/^#\\s*/, "")});
+            jsonArray.push({h1: line.replace(/^#\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
         } else {
-            jsonArray.push({p: line});
+            jsonArray.push({p: line.replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
         }
     }
 
@@ -186,11 +195,39 @@ function renderPreview() {
         }
 
         let formatted = escapeHtml(line);
-        formatted = formatted.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
-        formatted = formatted.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
-        formatted = formatted.replace(/__(.*?)__/g, "<u>$1</u>");
-        formatted = formatted.replace(/~~(.*?)~~/g, "<s>$1</s>");
-        formatted = formatted.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+        // format `None` text `None` to not be formatted 
+        
+        if (formatted.match(/\`None`\s([\s\S]*?)\s\`None`/)) {
+            // Extract the content between `None` markers
+            const noneMatch = formatted.match(/\`None`\s([\s\S]*?)\s\`None`/);
+            if (noneMatch) {
+                formatted = noneMatch[1]; // keep raw text only
+            }
+        } else {
+        
+            // Basic formatting
+            formatted = formatted.replace(/"/g, '\u201C'); // left double quote
+            formatted = formatted.replace(/"/g, '\u201D'); // right double quote
+            formatted = formatted.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
+            formatted = formatted.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
+            formatted = formatted.replace(/__(.*?)__/g, "<u>$1</u>");
+            formatted = formatted.replace(/~~(.*?)~~/g, "<s>$1</s>");
+            formatted = formatted.replace(/\`Vertical\.L`\s(.*?)\s\`Vertical`/g, "<span style='float:left; text-align:left;'>$1</span>");
+            formatted = formatted.replace(/\`Vertical\.R`\s(.*?)\s\`Vertical`/g, "<span style='float:right; text-align:right;'>$1</span>");
+            formatted = formatted.replace(/\`Vertical\.C`\s(.*?)\s\`Vertical`/g, "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>");
+            formatted = formatted.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
+            formatted = formatted.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
+            formatted = formatted.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
+
+            // Size, Color, Background, Code, Links
+            formatted = formatted.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
+            formatted = formatted.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
+            formatted = formatted.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
+            formatted = formatted.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+            formatted = formatted.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+        
+        }
+
 
         if (line.startsWith("##")) html += "<h2>" + formatted.replace(/^##\\s*/, "") + "</h2>";
         else if (line.startsWith("#")) html += "<h1>" + formatted.replace(/^#\\s*/, "") + "</h1>";
@@ -203,6 +240,18 @@ function renderPreview() {
 
 editor.addEventListener("input", renderPreview);
 renderPreview();
+
+// ✅ Fix toggle button
+toggleJson.addEventListener("click", () => {
+    if (jsonPreview.style.display === "none" || jsonPreview.style.display === "") {
+        jsonPreview.style.display = "block";
+        livePreview.style.display = "none";
+    } else {
+        jsonPreview.style.display = "none";
+        livePreview.style.display = "block";
+    }
+});
+
 </script>
 HTML;
 }
@@ -382,17 +431,74 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
             
             foreach ($block as $key => $value) {
                 if ($key === "h1") {
-                    echo "<h1 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin: 20px 0 15px 0;'>" . htmlspecialchars($value) . "</h1>";
+                    $formatted = htmlspecialchars($value);
+                    if (preg_match('/`None`\s([\s\S]*?)\s`None`/', $formatted, $matches)) {
+                        // Keep raw text only
+                        $formatted = $matches[1];
+                    } else {
+                        $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
+                        $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $formatted);
+                        $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+                        $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
+                        $formatted = preg_replace('/__(.*?)__/', '<u>$1</u>', $formatted);
+                        $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
+                        $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
+                    }
+                    echo "<h1 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin: 20px 0 15px 0;'>" . $formatted . "</h1>";
                 } elseif ($key === "h2") {
-                    echo "<h2 style='color: #34495e; margin: 15px 0 10px 0;'>" . htmlspecialchars($value) . "</h2>";
+                    $formatted = htmlspecialchars($value);
+                    if (preg_match('/`None`\s([\s\S]*?)\s`None`/', $formatted, $matches)) {
+                        // Keep raw text only
+                        $formatted = $matches[1];
+                    } else {
+                        $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
+                        $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $formatted);
+                        $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+                        $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
+                        $formatted = preg_replace('/__(.*?)__/', '<u>$1</u>', $formatted);
+                        $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
+                        $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
+                    }
+                    echo "<h2 style='color: #34495e; margin: 15px 0 10px 0;'>" . $formatted . "</h2>";
                 } elseif ($key === "p") {
                     // Convert markdown-like syntax to HTML
                     $formatted = htmlspecialchars($value);
-                    $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
-                    $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
-                    $formatted = preg_replace('/__(.*?)__/', '<u>$1</u>', $formatted);
-                    $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
-                    $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
+                    if (preg_match('/`None`\s([\s\S]*?)\s`None`/', $formatted, $matches)) {
+                        // Keep raw text only
+                        $formatted = $matches[1];
+                    } else {
+                        $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
+                        $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $formatted);
+                        $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+                        $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
+                        $formatted = preg_replace('/__(.*?)__/', '<u>$1</u>', $formatted);
+                        $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
+                        $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
+                    }
                     echo "<p style='margin: 10px 0; color: #2c3e50;'>" . $formatted . "</p>";
                 } elseif ($key === "n") {
                     echo "<br>";
