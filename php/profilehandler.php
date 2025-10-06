@@ -51,7 +51,7 @@ function addUserWithPasswordAndOrglanguages($newUserId, $newPassword) {
     $append = "\n[{$newUserId}]\n"
     . "key = \"" . str_replace(["\n", "\r"], '', (string)$key) . "\"\n"
     . "password = \"" . str_replace(["\n", "\r"], '', (string)$newPassword) . "\"\n"
-    . "languages = " . json_encode(['eng', 'sve'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    . "languages = " . json_encode(['eng', 'swe'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
 
     file_put_contents(__DIR__ . "/../content.ini", $append, FILE_APPEND);
 

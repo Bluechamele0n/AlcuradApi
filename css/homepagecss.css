@@ -1,0 +1,59 @@
+/* Header */
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2vw;
+    border-radius: 0.8vw;
+    margin-bottom: 2vw;
+}
+
+.header h1 {
+    margin: 0 0 1vw 0;
+    font-size: 2.5em;
+}
+
+.header p {
+    margin: 0;
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+/* Card */
+.card {
+    background: #fff;
+    border: 0.1vw solid #ddd;
+    border-radius: 0.8vw;
+    padding: 2vw;
+    margin-bottom: 2vw;
+    box-shadow: 0 0.2vw 0.4vw rgba(0,0,0,0.1);
+}
+
+.card h3 {
+    margin: 0 0 1.5vw 0;
+    color: #333;
+}
+
+/* Form inside card */
+.form-group {
+    margin-bottom: 1vw;
+}
+
+.form-group input {
+    padding: 1vw;
+    width: 20vw;
+    border: 0.1vw solid #ccc;
+    border-radius: 0.4vw;
+}
+
+/* Buttons */
+.btn {
+    padding: 1vw 2vw;
+    border: none;
+    border-radius: 0.4vw;
+    cursor: pointer;
+    margin-right: 1vw;
+}
+
+.btn-login { background: #28a745; color: white; }
+.btn-register { background: #007bff; color: white; }
+.btn-change { background: #6c757d; color: white; }

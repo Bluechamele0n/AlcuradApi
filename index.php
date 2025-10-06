@@ -4,7 +4,7 @@
     // shared utilities
 
     // get content from hompage.php
-    include 'php/pagehandler.php';
+    include __DIR__.'php/pagehandler.php';
 
     //include 'php/alcuradapi.php';
     ?>

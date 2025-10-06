@@ -231,10 +231,11 @@ function listLanguages($userId = null, $lang = 'all', $api = false) {
         return $api ? ["languages" => $langs] : $langs;
     }
 
-    // Case 3: Only lang → return all users who have it
+    // Case 3: Only lang → return all users who have it (ignore AlcuradApi)
     if ($userId === null && $lang !== 'all') {
         $usersWithLang = [];
         foreach ($content as $uid => $data) {
+            if ($uid === 'AlcuradApi') continue; // IGNORE system user
             if (in_array($lang, $getUserLangs($uid), true)) {
                 $usersWithLang[] = $uid;
             }
@@ -242,9 +243,10 @@ function listLanguages($userId = null, $lang = 'all', $api = false) {
         return $api ? ["users" => $usersWithLang] : $usersWithLang;
     }
 
-    // Case 4: Neither → list all languages anyone has
+    // Case 4: Neither → list all languages anyone has (ignore AlcuradApi)
     $allLangs = [];
     foreach ($content as $uid => $data) {
+        if ($uid === 'AlcuradApi') continue; // IGNORE system user
         foreach ($getUserLangs($uid) as $l) {
             $allLangs[$l] = true; // prevent duplicates
         }
@@ -252,6 +254,7 @@ function listLanguages($userId = null, $lang = 'all', $api = false) {
     $allLangs = array_keys($allLangs);
     return $api ? ["languages" => $allLangs] : $allLangs;
 }
+
 
 
 

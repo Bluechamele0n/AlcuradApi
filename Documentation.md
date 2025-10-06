@@ -1,9 +1,7 @@
 # Alcurad API
 
 ## Endpoints
-[http://localhost:8080/AlcuradApi/php/alcuradapi.php](http://localhost:8080/AlcuradApi/php/alcuradapi.php)
-
-Change `localhost:8080` to the adress
+[https://tor.ntigskovde.se/php/alcuradapi.php](https://tor.ntigskovde.se/php/alcuradapi.php)
 
 Do Only accept `POST` and will only give back `{"error":"Only POST requests are allowed."}` if given a `GET` request. This is done so you can send multiple diffrent `values`. They are as follow;
 
@@ -79,6 +77,54 @@ All do have their own documentation below.
 ```
 Here are a few `values` to keep track of first is `userId` who in this case is whose document are you after. Then we have `key` which is not for the moment not neasesary. Then we have the `request` which is in this case `getDocument` who will give you back the document. Then we have `requestedPage` which is which dokument from the `userId` you are after then we have `lang` that if you keep empty will give you all back else will give only chosen language.
 
+``` json
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"getDocument",
+    "requestedPage":"An api test document",
+    "lang":"eng"
+}
+You will get back
+
+{
+    "document": {
+        "eng": [
+            {
+                "p": "You get this for this for english."
+            }
+        ]
+    }
+}
+
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"getDocument",
+    "requestedPage":"An api test document"
+}
+You will get back
+{
+    "document": [
+        {
+            "eng": [
+                {
+                    "p": "You get this for this for english."
+                }
+            ]
+        },
+        {
+            "swe": [
+                {
+                    "p": "And there are only two languages so you get both these"
+                }
+            ]
+        }
+    ]
+}
+
+```
+
 ### List documents
 ```json
 {
@@ -89,6 +135,65 @@ Here are a few `values` to keep track of first is `userId` who in this case is w
 }
 ```
 To keep it simple, if you leave `userId` empty you will get all documents saved else you will get the `userId`s documents. Then we have `key` which is not for the moment not neasesary. The `request` is `listDocuments` which will list all documents depending on the other values. `lang` is language if you leave it empty it will give all othervise only the chosen language.
+
+``` json
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listDocuments"
+}
+You get back;
+{
+    "AlcuradApi": {
+        "Formatting and styling": [
+            "all"
+        ],
+        "homepage": [
+            "eng",
+            "swe",
+            "jpn"            
+        ],
+        "userdashboard": [
+            "eng",
+            "swe",
+            "jpn"
+        ],
+        "Editor": [
+            "eng",
+            "swe",
+            "jpn"
+        ]
+    }
+}
+
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listDocuments",
+    "lang":"eng"
+}
+
+You get back;
+{
+    "AlcuradApi": {
+        "homepage": [
+            "eng"
+        ],
+        "userdashboard": [
+            "eng"
+        ],
+        "Editor": [
+            "eng"
+        ]
+    }
+}
+
+if you send;
+{
+    "request":"listDocuments"  
+}
+You will get every document listed under its user and every document under thats languages.
+```
 
 ### Update a Document
 ```json
@@ -157,6 +262,65 @@ Language is here shortned to `lang` and the language value shall be a three lett
 }
 ```
 When listing languages (`lang`) you have multiple diffrent results. If you want to get who has the language you write only the specific `lang` else if you want which languages some has then you only write `userId` else if you want to se if `userId` has specific `lang` you write both and get a `bool` value back else if you leave both empty you get just all languages anyone has. Here you do not need `key` but it is preffered. And you use the `request` `listLanguages`.
+```json
+If you send;
+{
+    "request":"listLanguages"
+}
+You get back;
+{
+    "languages": [
+        "eng",
+        "swe",
+        "fra",
+        "jpn",
+        "zho"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listLanguages"
+}
+You get back;
+{
+    "languages": [
+        "eng",
+        "swe",
+        "jpn",
+        "spa",
+        "deu",
+        "fra",
+        "ita",
+        "por",
+        "rus",
+        "zho"
+    ]
+}
+If you send;
+{
+    "lang":"eng",
+    "request":"listLanguages"
+}
+You get back;
+{
+    "users": [
+        "Tor",
+        "Admin",
+        "test",
+        "TheNews"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listLanguages",
+    "lang":"eng"
+}
+You get back;
+true
+```
+
 
 ### Add a Language to a userId
 ```json
@@ -200,6 +364,31 @@ When removing a language (`lang`) you have to use a `userId` and `password` or o
 }
 ```
 When listing users you can chose to either to check if a user exists by using a `userId` and you will get back a `bool` else if you do not include or leave it empty it will list every `userId` by name.
+```Json
+If you send;
+{
+    "request":"listUsers"
+}
+You get back;
+{
+    "users": [
+        "Tor",
+        "Admin",
+        "test",
+        "AlcuradApi",
+        "TheNews"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listUsers"
+}
+You get back;
+{
+    "exists": true
+}
+```
 
 ### Add a new User
 ```json
@@ -221,3 +410,169 @@ You want a new profile/user, if that is the case you'll need a `request` with `a
 }
 ```
 To remove a profile/user by the `API` you'll need to include the profiles `userId`, `password` and `key`. And to do this you'll need to do a `removeUser` `request`.
+
+# Styling & Formatting
+
+For styling & formatting there are multiple diffrent commands put in such as for background color, text color, text size, text font, highlight, links and so much more. If you want to look at the diffent ones just go the the webbsite and go into the document `Formatting and Styling` and then there they all are displayed both in use and not.
+## Format for saving;
+### Headers
+To make an `header` you´ll just need to use an `#` or `##` debending on a `Header` or a `Subheader` in the saving file the text using # or ## will be saved with the key as `h1` or `h2` respectivly like example below.
+
+``` json
+# if you write a header as this
+## or this it will be saved as
+
+[{"eng":[{"h1":"if you write a header as this"},{"h2":"or this it will be saved as"}]}]
+```
+
+for the selected `language` and `document`.
+
+### General text
+When writing general text it will be saved under the key `"p"` and in general all text is saved that way execept when it comes to the headers and empty line when writing normal text it will be saved as show below;
+
+```json
+Normal text
+
+[{"eng":[{"p":"normal text"}]}]
+```
+
+and if writing on multiple lines it looks like this
+
+``` json
+Normal text
+even more
+Normal text
+
+[{"eng":[{"p":"Normal text"},{"p":"even more"},{"p":"Normal text"}]}]
+```
+and so it does for the selected `language` and `document`.
+
+### Empty line
+on an empty line it will just save as 
+```json 
+[{"eng":[{"n":"down"}]}]
+```
+
+for selected `language` and `document`.
+
+## Formatting
+Formatting works for both `general text` and `headers`.
+### Bold
+When wanting to format a text to be **`bold`** you use ** on each side of the text such as **`Bold`** == `**Bold**`. It will just save the text with ** on each side as example below.
+
+I write a **`Bold text`**
+``` json
+[{"eng":[{"p":"I write a **Bold text**"}]}]
+```
+
+### Italic
+When wanting to format a text to be *`Italic`* you use `*` on each side of the text such as *`Italic`* == `*Italic*`. It will hust save the text with `*` on each side as example below.
+
+I write in *`Italic`*
+``` json
+[{"eng":[{"p":"I write in *Italic*"}]}]
+```
+
+### Underscore
+When wanting to format a text to be `Underscore` you use `__` on each side of the text such as `Underscore` == `__Underscore__`. It will hust save the text with `__` on each side as example below.
+
+I write with a `Underscore`
+``` json
+[{"eng":[{"p":"I write with an __Underscore__"}]}]
+```
+
+
+### Drawn over (strikethrough)
+When wanting to format a text to be ~~`Strikethrough`~~ you use `~~` on each side of the text such as ~~`Strikethrough`~~ == `~~Strikethrough~~`. It will hust save the text with `~~` on each side as example below.
+
+I write with a ~~`Strikethrough`~~
+``` json
+[{"eng":[{"p":"I write with an ~~Strikethrough~~"}]}]
+```
+
+### Link
+When wanting to insert a `link` into text you use `[]()` where you put the displayed text into `[]` and the link into `()`. [Link](https:/www.example.se) == `[Link](https:/www.example.se)`.
+it.
+
+an [Link](https:/www.example.se) as an example
+``` json
+[{"eng":[{"":"an [Link](https:/www.example.se) as an example"}]}]
+```
+
+## Styling
+Styling works for both `general text` and `headers`.
+it will only change the text that is inside the command prompts all outside will be unaffected
+### Text Color
+When you want to change the color of text you use the short command color to write with a special color if you write `color.red` before the text with the command symbol ` on eathier side of the command. Then write color with the command symbol on either side of the command it will change the color this works with color name, rgb(), and whatever php can accept. 
+
+It is saved as following if the text i want to save is; 
+    ```
+    I want to save `color.red` red coloring `color` and `color.rgba(214, 96, 96, 0.35)` one semi transperent red `color`
+    ```
+```json
+[{"eng":[{"p":"I want to save `color.red` red coloring `color` and `color.rgba(214, 96, 96, 0.35)` one semi transperent red `color`"}]}]
+```
+
+### Text size
+When you want to change the size of text you use the short command size to write with a diffrent size. If you write `size.1` before the text with the command symbol ` on eathier side of the command. Then write size with the command symbol on either side of the command it will change the size. 
+
+`size.1` is original size.
+
+It is saved as following if the text i want to save is; 
+    ```
+    I want to save `size.2` sizeing `size`.
+    ```
+```json
+[{"eng":[{"p":"I want to save `size.2` sizeing `size`."}]}]
+```
+
+### Text font
+When you want to change the font of text you use the short command font to write with a diffrent font. If you write `font.` before the text with a font like impact after the . and with the command symbol ` on eathier side of the command. Then write font with the command symbol on either side of the command it will change the font. 
+
+It is saved as following if the text i want to save is; 
+    ```
+    I want to save `font.impact` the font `font`.
+    ```
+```json
+[{"eng":[{"p":"I want to save `font.impact` the font `font`."}]}]
+```
+
+### Background color
+When you want to change the background color of text you use the short command bg to write with a background color. If you write ```
+    `bg.red`
+``` before the text. Then write bg with the command symbol ` on either side of the command it will change the background color this works with color name, rgb(), and whatever php can accept. 
+
+It is saved as following if the text i want to save is; 
+    ```
+    I want to save `bg.red` red coloring `bg` and `bg.rgba(214, 96, 96, 0.35)` one semi transperent red `bg`
+    ```
+```json
+[{"eng":[{"p":"I want to save `bg.red` red coloring `bg` and `bg.rgba(214, 96, 96, 0.35)` one semi transperent red `bg`"}]}]
+```
+
+### Boxed in (Highlight)
+If you want to box in/ highlight text you write ` on either side. It saves with them.
+
+### Text alignment
+If you want to align text on the vertical axis you use 
+    ```
+    `Verical.`
+    ``` where if you put L|C|R after the dot you align the entire line in that oriangtation where L|C|R are left|center|right respectivly. If you put 
+    ```
+    `Vertical`
+    ``` after it will only align the text within the the two. 
+    
+It saves as the others example if i want to save; 
+    ```
+    `Vertical.R` Right end of the line `Vertical` `Vertical.L` Normal/at the beginning `Vertical` and `Vertical.C` Centered on the line `Vertical`
+    ``` you'll get;
+
+``` Json
+[{"eng":[{"p":"`Vertical.R` Right end of the line `Vertical` `Vertical.L` Normal/at the beginning `Vertical` and `Vertical.C` Centered on the line `Vertical`"}]}]
+```
+
+### No Styling and formatting
+if you want to styling but want to write * # and the others you write 
+    ```
+    `None`
+    ``` on both sides and saves with them as written in.

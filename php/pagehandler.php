@@ -73,7 +73,22 @@ function page($page, $yourId = null, $docName = null, $langId = null) {
     switch($page) {
         case "doc":
             if (isset($content[$yourId]) && $docName !== null) {
-                openDocument($docName, $yourId, $langId);
+                if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['Editor'])) {
+                    echo '<div class="alert-error"><h3>Error: No user dashboard content found</h3><p>Please contact the administrator.</p></div>';
+                    return;
+                }
+                $editorContent = $content['AlcuradApi']['Editor'];
+                $selectedLang = $_SESSION['langId'] ?? $langId;
+                $langBlock = null;
+                foreach ($editorContent as $langEntry) {
+                    if (isset($langEntry[$selectedLang])) {$langBlock = $langEntry[$selectedLang]; break;}
+                }
+                // fallback to English if not found
+                if ($langBlock === null) {
+                    foreach ($editorContent as $langEntry) {if (isset($langEntry['eng'])) {$langBlock = $langEntry['eng']; break;}}
+                }
+                $editorContent = $langBlock;  
+                openDocument($docName, $yourId, $langId, $editorContent);
                 unset($_POST['docButton']);
                 $_POST['homepage'] = false;
             }
@@ -105,150 +120,179 @@ function page($page, $yourId = null, $docName = null, $langId = null) {
 
 function openUserPage($userid) {
     global $content;
-    
-    // Check if the content is loaded
+
     if ($content === false) {
-        echo '<div style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">';
-        echo '<h3>Error: Unable to load content</h3>';
-        echo '<p>Unable to load content.ini file.</p>';
-        echo '</div>';
+        echo '<div class="alert-error"><h3>Error: Unable to load content</h3><p>Unable to load content.ini file.</p></div>';
         return;
     }
 
-    // Check if the section for the given $userid exists
     if (!isset($content[$userid])) {
-        echo '<div style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">';
-        echo '<h3>Error: User not found</h3>';
-        echo '<p>No section found for User ID: ' . htmlspecialchars($userid) . '</p>';
-        echo '</div>';
+        echo '<div class="alert-error"><h3>Error: User not found</h3><p>No section found for User ID: ' . htmlspecialchars($userid) . '</p></div>';
         return;
     }
 
-    // Get the keys and values from the section matching $userid
+    echo '<link rel="stylesheet" href="./css/pagehandlercss.css">';
+
+    if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['userdashboard'])) {
+        echo '<div class="alert-error"><h3>Error: No user dashboard content found</h3><p>Please contact the administrator.</p></div>';
+        return;
+    }
+
+    $userpageContent = $content['AlcuradApi']['userdashboard'];
+
+    $selectedLang = $_SESSION['langId'] ?? $langId;
+    $langBlock = null;
+
+    foreach ($userpageContent as $langEntry) {
+        if (isset($langEntry[$selectedLang])) {
+            $langBlock = $langEntry[$selectedLang];
+            break;
+        }
+    }
+
+    // fallback to English if not found
+    if ($langBlock === null) {
+        foreach ($userpageContent as $langEntry) {
+            if (isset($langEntry['eng'])) {
+                $langBlock = $langEntry['eng'];
+                break;
+            }
+        }
+    }
+
+    $userpageContent = $langBlock;  
+    $tag1 = $userpageContent[0];
+    $tag1 = $tag1['p'];
+    $tag2 = $userpageContent[1];
+    $tag2 = $tag2['p'];
+    $tag3 = $userpageContent[2];
+    $tag3 = $tag3['p'];
+    $tag4 = $userpageContent[3];
+    $tag4 = $tag4['p'];
+    $tag5 = $userpageContent[4];
+    $tag5 = $tag5['p'];
+    $tag6 = $userpageContent[5];
+    $tag6 = $tag6['p'];
+    $tag7 = $userpageContent[6];
+    $tag7 = $tag7['p'];
+    $tag8 = $userpageContent[7];
+    $tag8 = $tag8['p'];
+    $tag9 = $userpageContent[8];
+    $tag9 = $tag9['p'];
+    $tag10 = $userpageContent[9];
+    $tag10 = $tag10['p'];
+    $tag11 = $userpageContent[10];
+    $tag11 = $tag11['p'];
+    $tag12 = $userpageContent[11];
+    $tag12 = $tag12['p'];
+    $tag13 = $userpageContent[12];
+    $tag13 = $tag13['p'];
+    $tag14 = $userpageContent[13];
+    $tag14 = $tag14['p'];
+    $tag15 = $userpageContent[14];
+    $tag15 = $tag15['p'];
+    $tag16 = $userpageContent[15];
+    $tag16 = $tag16['p'];
+    $tag17 = $userpageContent[16];
+    $tag17 = $tag17['p'];
+    $tag18 = $userpageContent[17];
+    $tag18 = $tag18['p'];
+    $tag19 = $userpageContent[18];
+    $tag19 = $tag19['p'];
+    $tag20 = $userpageContent[19];
+    $tag20 = $tag20['p'];
+    $tag21 = $userpageContent[20];
+    $tag21 = $tag21['p'];
+
+
     $userSection = $content[$userid];
 
-    // Stop rendering homepage content
-    echo "<script>document.body.innerHTML = '';</script>";
+    echo '<div class="main-container">';
 
-    // Main container with modern styling
-    echo '<div style="min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; font-family: Arial, sans-serif;">';
-    
-    // Header section
-    echo '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">';
-    echo '<h1 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: 300;">User Dashboard</h1>';
-    echo '<p style="margin: 0; font-size: 1.2em; opacity: 0.9;">Welcome back, <strong>' . htmlspecialchars($userid) . '</strong></p>';
+    // Header
+    echo '<div class="header">';
+    echo '<h1>'.$tag1.'</h1>';
+    echo '<p>'.$tag2.'<strong>' . htmlspecialchars($userid) . '</strong></p>';
+    showUsersKey($userid, $tag21);
     echo '</div>';
 
-    // Language management section
-    echo '<div style="background: #fff; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e1e8ed;">';
-    echo '<h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.4em; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Language Management</h3>';
-    
-    // Language chooser
-    languangeChoser($userid, true);
-    
-    // Add language form
-    echo '<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">';
-    echo '<h4 style="margin: 0 0 10px 0; color: #495057;">Add New Language</h4>';
-    echo '<form method="POST" action="" style="display: flex; gap: 10px; align-items: center;">';
+    // Language Management
+    echo '<div class="card language-header">';
+    echo '<h3>'.$tag3.'</h3>';
+    languangeChoser($userid, true, $tag4, $tag5);
+    echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
-    echo '<input type="text" name="newLangCode" placeholder="Language Code (e.g., fra, deu)" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; flex: 1; max-width: 200px;">';
+    echo '<input type="text" name="newLangCode" placeholder="'.$tag6.'">';
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
-    echo '<button type="submit" name="addLang" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Add Language</button>';
-    echo '<button type="submit" name="removeLangbutton" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Remove Language</button>';
+    echo '<button type="submit" name="addLang" class="btn-add">'.$tag7.'</button>';
+    echo '<button type="submit" name="removeLangbutton" class="btn-remove">'.$tag8.'</button>';
     echo '</form>';
-    echo '<p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">Current language: ' . ($_POST['langId']) . '</p>';
-    echo '</div>';
     echo '</div>';
 
-    // Document management section
-    echo '<div style="background: #fff; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e1e8ed;">';
-    echo '<h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.4em; border-bottom: 2px solid #28a745; padding-bottom: 10px;">Document Management</h3>';
-    
-    // Document list
-    echo '<div style="margin-bottom: 20px;">';
-    echo '<h4 style="margin: 0 0 15px 0; color: #495057;">Your Documents</h4>';
-    echo '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">';
-    
-    // Generate buttons for each document
-    echo '<form method="POST" action="" style="display: contents;">';
+    // Document Management
+    echo '<div class="card document-header">';
+    echo '<h3>'.$tag9.'</h3>';
+    echo '<div><h4>'.$tag10.'</h4>';
+    echo '<form method="POST" action="" class="doc-grid">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
-    if (isset($_POST['langId'])) echo '<input type="hidden" name="langId" value="' . htmlspecialchars($_POST['langId']) . '">';
-    
+
     $docCount = 0;
     foreach ($userSection as $key => $value) {
-        if ($key === "password" || $key === "languages" || $key === "key") continue; // Skip system keys
+        if ($key === "password" || $key === "languages" || $key === "key") continue;
         $docCount++;
-        echo '<input type="hidden" name="editDoc" value="1">'; // default to edit mode
-        echo '<button type="submit" name="docButton" value="' . htmlspecialchars($key) . '" style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease; text-align: center;">';
-        echo '<div style="font-size: 24px; margin-bottom: 5px;">📄</div>';
+        echo '<input type="hidden" name="editDoc" value="1">';
+        echo '<button type="submit" name="docButton" value="' . htmlspecialchars($key) . '">';
+        echo '<div>📄</div>';
         echo '<div>' . htmlspecialchars($key) . '</div>';
         echo '</button>';
     }
-    
+
     if ($docCount === 0) {
-        echo '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #6c757d; background: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;">';
-        echo '<div style="font-size: 48px; margin-bottom: 15px;">📝</div>';
-        echo '<h4 style="margin: 0 0 10px 0; color: #495057;">No documents yet</h4>';
-        echo '<p style="margin: 0; color: #6c757d;">Create your first document below</p>';
-        echo '</div>';
+        echo '<div class="doc-empty"><div>📝</div><h4>'.$tag19.'</h4><p>'.$tag20.'</p></div>';
     }
-    
-    echo '</form>';
-    echo '</div>';
-    echo '</div>';
 
-    // Document actions
-    echo '<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; border: 1px solid #e9ecef;">';
-    echo '<h4 style="margin: 0 0 15px 0; color: #495057;">Document Actions</h4>';
-    
-    // Add document form
-    echo '<form method="POST" action="" style="margin-bottom: 15px;">';
+    echo '</form></div>';
+
+    // Document Actions
+    echo '<h4>'.$tag11.'</h4>';
+    echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
-    echo '<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">';
-    echo '<input type="text" name="newDocName" placeholder="New Document Name" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; flex: 1; max-width: 250px;">';
-    echo '<button type="submit" name="addDocButton" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">➕ Add Document</button>';
-    echo '</div>';
+    echo '<input type="text" name="newDocName" placeholder="'.$tag12.'">';
+    echo '<button type="submit" name="addDocButton" class="btn-add">'.$tag13.'</button>';
     echo '</form>';
-    
-    // Remove document form
-    echo '<form method="POST" action="">';
+
+    echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
-    echo '<div style="display: flex; gap: 10px; align-items: center;">';
-    echo '<input type="text" name="removeDocName" placeholder="Document Name to Remove" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; flex: 1; max-width: 250px;">';
-    echo '<button type="submit" name="removeDocButton" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">🗑️ Remove Document</button>';
-    echo '</div>';
+    echo '<input type="text" name="removeDocName" placeholder="'.$tag14.'">';
+    echo '<button type="submit" name="removeDocButton" class="btn-remove">'.$tag15.'</button>';
     echo '</form>';
-    echo '</div>';
     echo '</div>';
 
-    // Account actions
-    echo '<div style="background: #fff; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e1e8ed;">';
-    echo '<h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.4em; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">Account Actions</h3>';
-    
-    echo '<div style="display: flex; gap: 15px; flex-wrap: wrap;">';
-    echo '<form method="POST" action="">';
+    // Account Actions
+    echo '<div class="card account-header">';
+    echo '<h3>'.$tag16.'</h3>';
+    echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
-    echo '<button type="submit" name="logoutButton" style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">🚪 Logout</button>';
+    echo '<button type="submit" name="logoutButton" class="btn-logout">'.$tag17.'</button>';
     echo '</form>';
-    
-    echo '<form method="POST" action="">';
+
+    echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
-    echo '<button type="submit" name="accountRemoveButton" style="padding: 12px 24px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px;">⚠️ Remove Account</button>';
+    echo '<button type="submit" name="accountRemoveButton" class="btn-remove">'.$tag18.'</button>';
     echo '</form>';
     echo '</div>';
-    echo '</div>';
 
-    echo '</div>'; // Close main container
+    echo '</div>'; // End main-container
 }
 
 
 
 
-function languangeChoser($userId, $onUserPage = false) {
+function languangeChoser($userId, $onUserPage = false, $tag4, $tag5) {
     global $content;
     // look for current user languages in content.ini
     if ($userId === null || !isset($content[$userId])) {
@@ -276,7 +320,7 @@ function languangeChoser($userId, $onUserPage = false) {
     $language = isset($_POST['langId']) ? $_POST['langId'] : (isset($availableLanguages[0]) ? $availableLanguages[0] : null);
     // Render language selection dropdown
     echo '<form method="POST" action="">';
-    echo '<label for="language">Select Language:</label>';
+    echo '<label for="language">'.$tag4.'</label>';
     echo '<select name="langId" id="language">';
     foreach ($availableLanguages as $langCode) {
         $selected = ($langCode === $language) ? 'selected' : '';
@@ -286,7 +330,7 @@ function languangeChoser($userId, $onUserPage = false) {
 
     echo '<input type="hidden" name="userPageLangChange" value="1">';
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userId) . '">';
-    echo '<button type="submit" style="margin-left: 10px; padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Update Language</button>';
+    echo '<button type="submit" style="margin-left: 10px; padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">'.$tag5.'</button>';
     echo '</form>';
     
     
@@ -295,34 +339,97 @@ function languangeChoser($userId, $onUserPage = false) {
 
 
 
-function homepage($langId = "sve") {
+function homepage($langId = "swe") {
     global $content;
+    // clear the body if homepage is loaded twice only
+    echo "<script>document.body.innerHTML = '';</script>";
     //print_r($content);
-    echo '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px;">';
-    echo '<h1 style="margin: 0 0 10px 0; font-size: 2.5em;">Welcome to AlcuradApi</h1>';
-    echo '<p style="margin: 0; font-size: 1.2em; opacity: 0.9;">Your multilingual document management system</p>';
-    echo '</div>';
+    // from content take the homepage document from AlcuradApi user and put every p it into a list
+    if ($content === false) {
+        echo "Error: Unable to load content.ini file.";
+        return;
+    }
+    if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['homepage'])) {
+        echo "Error: No homepage content found.";
+        return;
+    }
     
-    echo '<div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-    echo '<h3 style="margin: 0 0 15px 0; color: #333;">User Authentication</h3>';
-    echo "<form method='POST' action=''>";
-    echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
-    echo "<div style='margin-bottom: 10px;'>";
-    echo "<input type='text' name='userName' placeholder='Username' style='padding: 10px; width: 200px; border: 1px solid #ccc; border-radius: 4px;'>";
-    echo "</div>";
-    echo "<div style='margin-bottom: 15px;'>";
-    echo "<input type='password' name='password' placeholder='Password' style='padding: 10px; width: 200px; border: 1px solid #ccc; border-radius: 4px;'>";
-    echo "</div>";
-    echo "<button type='submit' name='loginButton' style='padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;'>Login</button>";
-    echo "<button type='submit' name='registerButton' style='padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;'>Register</button>";
-    echo "<button type='submit' name='changePasswordButton' style='padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;'>Change Password</button>";
-    echo "</form>";
-    echo "</div>";
+    $homepageContent = $content['AlcuradApi']['homepage'];
+
+    $selectedLang = $_SESSION['langId'] ?? $langId;
+    $langBlock = null;
+
+    foreach ($homepageContent as $langEntry) {
+        if (isset($langEntry[$selectedLang])) {
+            $langBlock = $langEntry[$selectedLang];
+            break;
+        }
+    }
+
+    // fallback to English if not found
+    if ($langBlock === null) {
+        foreach ($homepageContent as $langEntry) {
+            if (isset($langEntry['eng'])) {
+                $langBlock = $langEntry['eng'];
+                break;
+            }
+        }
+    }
+
+    $homepageContent = $langBlock;  
+    $tag1 = $homepageContent[0];
+    $tag1 = $tag1['p'];
+    $tag2 = $homepageContent[1];
+    $tag2 = $tag2['p'];
+    $tag3 = $homepageContent[2];
+    $tag3 = $tag3['p'];
+    $tag4 = $homepageContent[3];
+    $tag4 = $tag4['p'];
+    $tag10 = $homepageContent[9];
+    $tag10 = $tag10['p'];
+    $tag11 = $homepageContent[10];
+    $tag11 = $tag11['p'];
+    $tag12 = $homepageContent[11];
+    $tag12 = $tag12['p'];
+    $tag13 = $homepageContent[12];
+    $tag13 = $tag13['p'];
+    $tag14 = $homepageContent[13];
+    $tag14 = $tag14['p'];
     
-    echo '<div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-    echo '<h3 style="margin: 0 0 15px 0; color: #333;">Browse All Documents</h3>';
-    loadAllPages(true, $langId); // load all pages but make them showable only if they have something in the selected language
+
+    echo '<link rel="stylesheet" href="./css/homepagecss.css">';
+    echo '<div class="header">';
+    echo '<h1>'.$tag1.'</h1>';
+    echo '<p>'.$tag2.'</p>';
     echo '</div>';
+
+    echo '<div class="card auth-card">';
+    echo '<h3>'.$tag3.'</h3>';
+    echo '<form method="POST" action="">';
+    echo '<input type="hidden" name="langId" value="' . htmlspecialchars($_SESSION['langId']) . '">';
+
+    echo '<div class="form-group">';
+    echo '<input type="text" name="userName" placeholder="'.$tag10.'">';
+    echo '</div>';
+
+    echo '<div class="form-group">';
+    echo '<input type="password" name="password" placeholder="'.$tag11.'">';
+    echo '</div>';
+
+    echo '<button type="submit" name="loginButton" class="btn btn-login">'.$tag12.'</button>';
+    echo '<button type="submit" name="registerButton" class="btn btn-register">'.$tag13.'</button>';
+    echo '<button type="submit" name="changePasswordButton" class="btn btn-change">'.$tag14.'</button>';
+
+    echo '</form>';
+    echo '</div>';
+
+    echo '<div class="card doc-card">';
+    echo '<h3>'.$tag4.'</h3>';
+    loadAllPages(true, $langId, $homepageContent);
+    echo '</div>';
+
+
+
     
     
 }
@@ -342,6 +449,9 @@ function requests() {
         // Check if this is a request to view the document (from homepage)
         if (isset($_POST['viewDoc']) && $_POST['viewDoc'] == '1') {
             // Show HTML version of the document directly
+            if (isset($content[$userId][$selectedDoc][0]['all']) && !empty($content[$userId][$selectedDoc][0]['all']) && !isset($content[$userId][$selectedDoc][0][$langId])) {
+                $langId = 'all'; // force all if exists
+            }
             showHtmlDocversion($selectedDoc, $userId, $langId);
             $_POST['viewDoc'] = '0'; // reset to prevent re-submission
         } elseif (isset($_POST['editDoc']) && $_POST['editDoc'] == '1') {
@@ -353,8 +463,17 @@ function requests() {
         $userId = htmlspecialchars($_POST['userId']);
         if (!empty($newDocName)) {
             addNewDocument($userId, $newDocName);
-            $_POST = [];
+            // unset all posts that triggered this specificly
+            unset($_POST['newDocName']);
+            unset($_POST['addDocButton']);
+            // if post is empty set apiversion to false to prevent re-submission
+           
+            $_POST["apiVersion"] = false; // to prevent re-submission
         } else {
+            unset($_POST['removeDocName']);
+            unset($_POST['removeDocButton']);
+          
+            $_POST["apiVersion"] = false; // to prevent re-submission
             echo "Error: Document name cannot be empty.";
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removeDocButton'])) {
@@ -362,8 +481,15 @@ function requests() {
         $userId = htmlspecialchars($_POST['userId']);
         if (!empty($removeDocName)) {
             removeDocument($userId, $removeDocName);
-            $_POST = [];
+            unset($_POST['removeDocName']);
+            unset($_POST['removeDocButton']);
+            $_POST["apiVersion"] = false; // to prevent re-submission
+
         } else {
+            unset($_POST['removeDocName']);
+            unset($_POST['removeDocButton']);
+           
+            $_POST["apiVersion"] = false; // to prevent re-submission
             echo "Error: Document name to remove cannot be empty.";
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveDoc'])) {
@@ -371,7 +497,22 @@ function requests() {
         $docName = htmlspecialchars($_POST['docName']);
         $langId = isset($_POST['langId']) ? htmlspecialchars($_POST['langId']) : null;
         $_POST = ['langId' => $langId];
-        openDocument($docName, $userId, $langId);
+        if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['Editor'])) {
+            echo '<div class="alert-error"><h3>Error: No user dashboard content found</h3><p>Please contact the administrator.</p></div>';
+            return;
+        }
+        $editorContent = $content['AlcuradApi']['Editor'];
+        $selectedLang = $_SESSION['langId'] ?? $langId;
+        $langBlock = null;
+        foreach ($editorContent as $langEntry) {
+            if (isset($langEntry[$selectedLang])) {$langBlock = $langEntry[$selectedLang]; break;}
+        }
+        // fallback to English if not found
+        if ($langBlock === null) {
+            foreach ($editorContent as $langEntry) {if (isset($langEntry['eng'])) {$langBlock = $langEntry['eng']; break;}}
+        }
+        $editorContent = $langBlock; 
+        openDocument($docName, $userId, $langId, $editorContent);
         $_POST['homepage'] = false; // to prevent re-submission
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backDocButton'])) {
         $userId = htmlspecialchars($_POST['userId']);
@@ -396,17 +537,16 @@ function requests() {
         $_POST["homepage"] = false; // to prevent re-submission
 
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['userPageLangChange'])) {
-        // Handle language change on user page - stay on user page
         $userId = htmlspecialchars($_POST['userId']);
-        $selectedLang = $_POST['langId'];
-        $_POST = ['langId' => $selectedLang];
+        $_SESSION['langId'] = $_POST['langId']; // persist new language
+        // Keep the original $_POST keys intact
         page("user", $userId);
-
+    
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['homepageLangChange'])) {
-        // Handle language change on homepage - stay on homepage
-        $selectedLang = $_POST['langId'];
-        $_POST = ['langId' => $selectedLang];
-        page("home");}
+        $_SESSION['langId'] = $_POST['langId'];
+        page("home");
+    }
+        
 
     
 
@@ -415,6 +555,7 @@ function requests() {
     ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addLang'])) {
         $userId = htmlspecialchars($_POST['userId']);
         $newLangCode = htmlspecialchars($_POST['newLangCode']);
+        $_POST["apiVersion"] = false; // to prevent re-submission
         if (!empty($newLangCode)) {
             if (function_exists('addLang')) {
                 echo "Adding language: " . htmlspecialchars($newLangCode) . " to user: " . htmlspecialchars($userId);
@@ -426,12 +567,13 @@ function requests() {
             echo "Error: Language code cannot be empty.";
         }
         page("user", $userId);
-        $_POST = []; // to prevent re-submission
+        unset($_POST['addLang']); // to prevent re-submission
     }
     if // remove lang
     ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removeLangbutton'])) {
         $userId = htmlspecialchars($_POST['userId']);
         $langToRemove = isset($_POST['langId']) ? htmlspecialchars($_POST['langId']) : null;
+        $_POST["apiVersion"] = false; // to prevent re-submission
         if (!empty($langToRemove)) {
             if (function_exists('removeLang')) {
                 echo "Removing language: " . htmlspecialchars($langToRemove) . " from user: " . htmlspecialchars($userId);
@@ -443,7 +585,7 @@ function requests() {
             echo "Error: Language code to remove cannot be empty.";
         }
         page("user", $userId);
-        $_POST = []; // to prevent re-submission
+        unset($_POST['removeLangbutton']); // to prevent re-submission
     }
 
     // when chosen lang go back to user page
@@ -457,6 +599,7 @@ function requests() {
         print_r($content);
         $newUserId = htmlspecialchars($_POST['userName']);
         $newPassword = htmlspecialchars($_POST['password']);
+        $_POST["apiVersion"] = false; // to prevent re-submission
         if (!empty($newUserId) && !empty($newPassword)) {
             if (isset($content[$newUserId])) {
                 echo "Error: User ID already exists.";
@@ -528,8 +671,20 @@ function changePassword() {
 }
 
 
-function loadAllPages($active, $langId = "sve") {
+function loadAllPages($active, $langId = "swe", $homepageContent) {
     global $content;
+    
+    $tag5 = $homepageContent[4];
+    $tag5 = $tag5['p'];
+    $tag6 = $homepageContent[5];
+    $tag6 = $tag6['p'];
+    $tag7 = $homepageContent[6];
+    $tag7 = $tag7['p'];
+    $tag8 = $homepageContent[7];
+    $tag8 = $tag8['p'];
+    $tag9 = $homepageContent[8];
+    $tag9 = $tag9['p'];
+    
     if ($content === false) {
         echo "Error: Unable to load content.ini file.";
         return;
@@ -541,6 +696,7 @@ function loadAllPages($active, $langId = "sve") {
     // Get all available languages from all users (no duplicates)
     $allLanguages = [];
     foreach ($content as $section => $docs) {
+        if ($section === 'AlcuradApi') continue; // ignore system section
         if (isset($docs['languages'])) {
             $langs = $docs['languages'];
             if (is_string($langs)) {
@@ -553,7 +709,7 @@ function loadAllPages($active, $langId = "sve") {
                 $allLanguages = array_merge($allLanguages, $langs);
             }
         }
-    }    
+    }     
     $allLanguages = array_unique($allLanguages);
     
     // Get selected language from langId or default to first available
@@ -568,7 +724,7 @@ function loadAllPages($active, $langId = "sve") {
     // Render language selection dropdown
     echo '<div style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">';
     echo '<form method="POST" action="">';
-    echo '<label for="language"><strong>Select Language:</strong></label><br>';
+    echo '<label for="language"><strong>'.$tag5.'</strong></label><br>';
     echo '<select name="langId" id="language" style="margin: 5px 0; padding: 5px;">';
     foreach ($allLanguages as $langCode) {
         $selected = ($langCode === $language) ? 'selected' : '';
@@ -576,7 +732,7 @@ function loadAllPages($active, $langId = "sve") {
     }
     echo '</select>';
     echo '<input type="hidden" name="homepageLangChange" value="1">';
-    echo '<button type="submit" style="margin-left: 10px; padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Update Language</button>';
+    echo '<button type="submit" style="margin-left: 10px; padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">'.$tag6.'</button>';
     echo '</form>';
     echo '</div>';
 
@@ -584,7 +740,7 @@ function loadAllPages($active, $langId = "sve") {
     $documentsByLanguage = [];
     foreach ($content as $section => $docs) {
         foreach ($docs as $key => $value) {
-            if ($key === "password" || $key === "languages") continue; // Skip system keys
+            if ($key === "password" || $key === "languages" || $key === 'key') continue; // Skip system keys
             
             $docContent = $value;
             if (is_string($docContent)) $docContent = json_decode($docContent, true);
@@ -598,7 +754,7 @@ function loadAllPages($active, $langId = "sve") {
             foreach ($docContent as $langObj) {
                 if (is_array($langObj)) {
                     foreach ($langObj as $langKey => $langValue) {
-                        if ($langKey === $language && is_array($langValue) && !empty($langValue)) {
+                        if (($langKey === $language || $langKey === 'all') && is_array($langValue) && !empty($langValue)) {
                             $hasLangContent = true;
                             $langBlocks = $langValue;
                             break;
@@ -621,14 +777,14 @@ function loadAllPages($active, $langId = "sve") {
     // Display documents grouped by user
     if (!empty($documentsByLanguage)) {
         echo '<div style="margin: 20px 0;">';
-        echo '<h3>Documents in ' . htmlspecialchars(strtoupper($language)) . ':</h3>';
+        echo '<h3>'.$tag7.' ' . htmlspecialchars(strtoupper($language)) . ':</h3>';
         
         $currentUser = null;
         foreach ($documentsByLanguage as $doc) {
             if ($currentUser !== $doc['userId']) {
                 if ($currentUser !== null) echo '</div>'; // Close previous user group
                 echo '<div style="margin: 10px 0; padding: 10px; border-left: 3px solid #007cba;">';
-                echo '<h4 style="margin: 0 0 10px 0; color: #007cba;">User: ' . htmlspecialchars($doc['userId']) . '</h4>';
+                echo '<h4 style="margin: 0 0 10px 0; color: #007cba;">'.$tag8.': ' . htmlspecialchars($doc['userId']) . '</h4>';
                 $currentUser = $doc['userId'];
             }
             
@@ -637,7 +793,7 @@ function loadAllPages($active, $langId = "sve") {
             echo "<input type='hidden' name='langId' value='" . htmlspecialchars($language) . "'>";
             echo "<input type='hidden' name='viewDoc' value='1'>";
             echo "<button type='submit' name='docButton' value='" . htmlspecialchars($doc['docName']) . "' style='padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;'>";
-            echo "View " . htmlspecialchars($doc['docName']);
+            echo $tag9.' ' . htmlspecialchars($doc['docName']);
             echo "</button>";
             echo "</form>";
         }
@@ -648,4 +804,45 @@ function loadAllPages($active, $langId = "sve") {
         echo '<p>No documents found in ' . htmlspecialchars(strtoupper($language)) . ' language.</p>';
         echo '</div>';
     }
+}
+
+
+function showUsersKey($userId, $tag21) {
+    global $content;
+    if ($content === false) {
+        echo "Error: Unable to load content.ini file.";
+        return;
+    }
+    if (!isset($content[$userId])) {
+        echo "Error: User not found.";
+        return;
+    }
+    $userSection = $content[$userId];
+    $userKey = isset($userSection['key']) ? $userSection['key'] : null;
+    // show if button is pressed reveal key
+
+    echo '<button type="button" name="revealKeyButton" class="btn-reveal btn-add">'.$tag21.'</button>';
+
+    if ($userKey !== null) {
+        echo '<div class="alert-info" style="display:none;">
+                <h3>'.$tag21.'</h3>
+                <p><strong>' . htmlspecialchars($userKey) . '</strong></p>
+              </div>';
+    } else {
+        echo '<div class="alert-warning" style="display:none;">
+                <h3>'.$tag21.'</h3>
+                <p>No user key found. Please contact the administrator.</p>
+              </div>';
+    }
+    
+    echo '
+    <script>
+        document.querySelector(".btn-reveal").addEventListener("click", function() {
+            this.nextElementSibling.style.display = "block";
+            this.style.display = "none";
+        });
+    </script>
+    ';
+    
+
 }

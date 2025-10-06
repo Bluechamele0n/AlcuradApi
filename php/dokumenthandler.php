@@ -20,7 +20,7 @@ foreach ($content as $section => $docs) {
 
 
 
-function openDocument($docName, $userId, $langId = null) {
+function openDocument($docName, $userId, $langId = null, $editorpageContent) {
     global $content;
     if (!isset($content[$userId][$docName])) {
         echo "Error: No section found for Document: " . htmlspecialchars($docName);
@@ -50,7 +50,7 @@ function openDocument($docName, $userId, $langId = null) {
     }
 
 
-    renderEditor($docName, $langToBlocks[$langId], $userId, $langId);
+    renderEditor($docName, $langToBlocks[$langId], $userId, $langId, $editorpageContent);
 }
 
 if (isset($_POST['saveDoc'])) {
@@ -87,10 +87,9 @@ if (isset($_POST['saveDoc'])) {
     // show the content of the document in a readable way
 
     writeIni($content);
-    echo "<p><strong>Saved to INI!</strong></p>";
 }
 
-function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
+function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpageContent) {
     if (is_string($docBlocksForLang)) $docBlocksForLang = json_decode($docBlocksForLang, true);
     if (!is_array($docBlocksForLang)) $docBlocksForLang = [];
 
@@ -110,12 +109,23 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
 
     $jsonContent = json_encode($docBlocksForLang, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
+    $tag1 = $editorpageContent[0];
+    $tag1 = $tag1['p'];
+    $tag2 = $editorpageContent[1];
+    $tag2 = $tag2['p'];
+    $tag3 = $editorpageContent[2];
+    $tag3 = $tag3['p'];
+    $tag4 = $editorpageContent[3];
+    $tag4 = $tag4['p'];
+    $tag5 = $editorpageContent[4];
+    $tag5 = $tag5['p'];
+
     echo <<<HTML
     
 <div class="container">
     <div class="header-card">
-        <h1>Editing Document</h1>
-        <p>Document: <strong>{$docName}</strong></p>
+        <h1>$tag1</h1>
+        <p><strong>{$docName}</strong></p>
         <link rel="stylesheet" href="./css/pagescss.css">
     </div>
 
@@ -127,30 +137,34 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId) {
 
         <div class="form-row">
             <div class="editor-container">
-                <textarea id="editor" placeholder="Type here...">{$text}</textarea>
+                <textarea id="editor" placeholder=$tag5>{$text}</textarea>
             </div>
 
             <div class="preview-container">
                 <div id="livePreview"></div>
-                <pre>
-                    <div id="jsonPreview"></div>
-                </pre>
-                <button type="button" id="toggleJson">Toggle JSON Preview</button>
+                <div class="json-preview">
+                    <pre >
+                        <div id="jsonPreview"></div>
+                    </pre>
+                </div>
             </div>
         </div>
 
         <div class="form-buttons">
-            <button type="submit" name="saveDoc">💾 Save Document</button>
-            <button type="submit" name="backDocButton">⬅️ Back to Documents</button>
+            <button type="submit" name="saveDoc">💾 $tag2</button>
+            <button type="button" id="toggleJson">$tag3</button>
+            <button type="submit" name="backDocButton">⬅️ $tag4</button>
         </div>
     </form>
 </div>
+
 
 <script>
 const editor = document.getElementById("editor");
 const tempJsonInput = document.getElementById("tempJson");
 const livePreview = document.getElementById("livePreview");
 const jsonPreview = document.getElementById("jsonPreview");
+const jsonContainer = document.querySelector(".json-preview");
 const toggleJson = document.getElementById("toggleJson");
 
 function escapeHtml(str) {
@@ -220,6 +234,7 @@ function renderPreview() {
             formatted = formatted.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
 
             // Size, Color, Background, Code, Links
+            formatted = formatted.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
             formatted = formatted.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
             formatted = formatted.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
             formatted = formatted.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
@@ -242,15 +257,22 @@ editor.addEventListener("input", renderPreview);
 renderPreview();
 
 // ✅ Fix toggle button
-toggleJson.addEventListener("click", () => {
-    if (jsonPreview.style.display === "none" || jsonPreview.style.display === "") {
-        jsonPreview.style.display = "block";
-        livePreview.style.display = "none";
-    } else {
-        jsonPreview.style.display = "none";
-        livePreview.style.display = "block";
-    }
+document.getElementById("toggleJson").addEventListener("click", () => {
+    document.getElementById("livePreview").classList.toggle("hide");
+    document.getElementById("jsonPreview").classList.toggle("show");
 });
+
+
+// ✅ Sync scroll between editor and preview
+function syncScroll(source, target) {
+    let ratio = source.scrollTop / (source.scrollHeight - source.clientHeight);
+    target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
+}
+
+editor.addEventListener("scroll", () => syncScroll(editor, livePreview));
+livePreview.addEventListener("scroll", () => syncScroll(livePreview, editor));
+
+
 
 </script>
 HTML;
@@ -290,6 +312,7 @@ function addNewDocument($userid, $NewDocName, $fromapi = false) {
             page("user", $userid);
         }
     } elseif (!$fromapi) {
+        page("user", $userid);
         echo "Document " . htmlspecialchars($NewDocName) . " already exists.";
     } else {
         return ["error" => "Document " . htmlspecialchars($NewDocName) . " already exists."];
@@ -339,7 +362,7 @@ function removeDocument($userid, $removeDocName, $fromapi = false, $lang = null)
         } else {
             unset($content[$userid][$removeDocName]);
             writeIni($content);
-            if (!$fromapi) {echo "Document " . htmlspecialchars($removeDocName) . " removed.";}
+            if (!$fromapi) { page("user", $userid); echo "Document " . htmlspecialchars($removeDocName) . " removed.";}
             else {return ["success" => "Document " . htmlspecialchars($removeDocName) . " removed."];}
         }
 
@@ -442,6 +465,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
@@ -465,6 +489,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
@@ -489,6 +514,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
