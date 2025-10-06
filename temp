@@ -1,0 +1,444 @@
+# Alcurad API
+
+## Endpoints
+[https://tor.ntigskovde.se/php/alcuradapi.php](https://tor.ntigskovde.se/php/alcuradapi.php)
+
+Do Only accept `POST` and will only give back `{"error":"Only POST requests are allowed."}` if given a `GET` request. This is done so you can send multiple diffrent `values`. They are as follow;
+
+### UserId
+`{"userId": "YourUserId"}`
+`userId` is used to know which user is doing the action and is needed in every `POST` if you want to do an action that do not require a `userId` you can use the `userId` `devGuest`.
+
+### Password
+`{"password": "YourPassword"}`
+`Password` similarly to `userId` is used to know who you are and if you have access to some of the features. It is also needed in every `POST` but if you want an action that doesnt require a `userId` or `password` you use the `password` `Dev`.
+
+### Key
+`{"key": "YourKey"}`
+`key` is the last thing in the identification progress instead of using a `userId` and a `password` you can use your `key`. `key` is given when creating an account if you do something that doesnt require a account use `key` `devG` and you willbe let through.
+
+# Request
+`{"request":"YourAction"}`
+When you want to do something you call a request there is multiple diffrent request who i will list below;
+
+- `getDocument`
+- `listDocuments`
+- `updateDocument`
+- `addDocument`
+- `removeDocument`
+- `listLanguages`
+- `addLanguage`
+- `removeLanguage`
+- `removeUser`
+- `listUsers`
+- `addUser`
+
+All do have their own documentation below.
+
+## Documents / `requestedPage`
+`{"requestedPage":"PageAreYouAfter"}`
+`requestedPage` is used to know which specific document you are after.
+
+### Get a specific document
+`{"userId":"WhoseDocument","key":"DevG", "request":"getDocument", "requestedPage":"WhichPageAreYouAfter","lang":"WhatLanguageVersion"}`
+Here are a few `values` to keep track of first is `userId` who in this case is whose document are you after. Then we have `key` which is not for the moment not neasesary. Then we have the `request` which is in this case `getDocument` who will give you back the document. Then we have `requestedPage` which is which dokument from the `userId` you are after then we have `lang` that if you keep empty will give you all back else will give only chosen language.
+
+`None`
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"getDocument",
+    "requestedPage":"An api test document",
+    "lang":"eng"
+}
+You will get back
+
+{
+    "document": {
+        "eng": [
+            {
+                "p": "You get this for this for english."
+            }
+        ]
+    }
+}
+
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"getDocument",
+    "requestedPage":"An api test document"
+}
+You will get back
+{
+    "document": [
+        {
+            "eng": [
+                {
+                    "p": "You get this for this for english."
+                }
+            ]
+        },
+        {
+            "swe": [
+                {
+                    "p": "And there are only two languages so you get both these"
+                }
+            ]
+        }
+    ]
+}
+`None`
+
+### List documents
+`{"userId":"WhoseDocuments","key":"DevG", "request":"listDocuments", "lang":"WhatLanguageVersions"}`
+To keep it simple, if you leave `userId` empty you will get all documents saved else you will get the `userId`s documents. Then we have `key` which is not for the moment not neasesary. The `request` is `listDocuments` which will list all documents depending on the other values. `lang` is language if you leave it empty it will give all othervise only the chosen language.
+
+`None`
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listDocuments"
+}
+You get back;
+{
+    "AlcuradApi": {
+        "Formatting and styling": [
+            "all"
+        ],
+        "homepage": [
+            "eng",
+            "swe",
+            "jpn"            
+        ],
+        "userdashboard": [
+            "eng",
+            "swe",
+            "jpn"
+        ],
+        "Editor": [
+            "eng",
+            "swe",
+            "jpn"
+        ]
+    }
+}
+
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listDocuments",
+    "lang":"eng"
+}
+
+You get back;
+{
+    "AlcuradApi": {
+        "homepage": [
+            "eng"
+        ],
+        "userdashboard": [
+            "eng"
+        ],
+        "Editor": [
+            "eng"
+        ]
+    }
+}
+
+if you send;
+{
+    "request":"listDocuments"  
+}
+You will get every document listed under its user and every document under thats languages.
+`None`
+
+### Update a Document
+`{"userId":"UsersUserId","password":"usersPassword","key":"usersKey", "request":"updateDocument","requestedPage":"WhichUserDocument", "lang":"WhatLanguageVersion","newContent":[{"h1":"Header "},{"h2":"Subheader"},{"p":"**Bold**"},{"p":"__Underscore__"},{"p":"*Italic*"},{"p":"~~drawn over~~"},{"p":"[Link](https:/www.example.se)"}]}`
+`None`
+{
+    "newContent": [{"eng": [{"h1": "Header"},{"h2": "Subheader"},{"p": "**Bold**"},{"p": "__Underscore__"},{"p": "*Italic*"},{"p": "~~drawn over~~"},{"p": "[Link](https:/www.example.se)"}]},
+    {"sve": [{"h1": "Rubrik"},{"h2": "Underrubrik"},{"p": "**Fetstil**"},{"p": "__Understrykning__"},{"p": "*Kursiv*"},{"p": "~~Överstruken~~"},{"p": "[Länk](https:/www.example.se)"}]},
+  {"jpn": [{"h1": "見出し"},{"h2": "小見出し"},{"p": "**太字**"},{"p": "__下線__"},{"p": "*斜体*"},{"p": "~~取り消し線~~"},{"p": "[リンク](https:/www.example.se)"}]}] // without lang
+}
+`None`
+
+To update a document you need premission by using the `userId` and `password` or only their `key` othervise you will not be able to open the document/change the document. You also need to specifiy which by its `requestedPage` id/name and you can give the entire with all `lang`s or you can also chose a specific `lang` to update. And the `request` need to be `updateDocument`. They new content for the document shall be the `value` of `newContent`.
+
+### Add a document
+`{"userId":"UsersUserId","password":"usersPassword","key":"usersKey", "request":"addDocument","requestedPage":"documentName"}`
+To add a document you need to do the `request` `addDocument`. When making a new document you need to have a `userId` and a `password` to know which user it belonges to or just use the `key`. `requestedPage` will be the document name and id. THIS WILL ONLY ADD AN EMPTY DOCUMENT WITHOUT ANY CONTENT AND WITH THE ORIGINAL eng AND sve.
+
+### removeDocument
+`{"userId":"UsersUserId","password":"usersPassword","key":"usersKey", "request":"removeDocument","requestedPage":"WhichUserDocument", "lang":"WhatLanguageVersion"}`
+When removing a document there is two types removing all of it or just a specific language version. You have to use `request` `removeDocument` either way. Then you chose which page using the `requestedPage` `value` and then if you want all keep `lang` empty else if you write a language it will only remove that one if it exists.
+
+## Language
+`{"lang": "language"}`
+Language is here shortned to `lang` and the language value shall be a three letter code as sve for sweden and eng for english and so on.
+
+### List of Languages
+`{"userId":"WhoseLanguages","key":"DevG", "request":"listLanguages", "lang":"who has this language"}`
+When listing languages (`lang`) you have multiple diffrent results. If you want to get who has the language you write only the specific `lang` else if you want which languages some has then you only write `userId` else if you want to se if `userId` has specific `lang` you write both and get a `bool` value back else if you leave both empty you get just all languages anyone has. Here you do not need `key` but it is preffered. And you use the `request` `listLanguages`.
+`None`
+If you send;
+{
+    "request":"listLanguages"
+}
+You get back;
+{
+    "languages": [
+        "eng",
+        "swe",
+        "fra",
+        "jpn",
+        "zho"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listLanguages"
+}
+You get back;
+{
+    "languages": [
+        "eng",
+        "swe",
+        "jpn",
+        "spa",
+        "deu",
+        "fra",
+        "ita",
+        "por",
+        "rus",
+        "zho"
+    ]
+}
+If you send;
+{
+    "lang":"eng",
+    "request":"listLanguages"
+}
+You get back;
+{
+    "users": [
+        "Tor",
+        "Admin",
+        "test",
+        "TheNews"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listLanguages",
+    "lang":"eng"
+}
+You get back;
+true
+`None`
+
+### Add a Language to a userId
+`{"userId":"usersUserId","password":"userPassword","key":"DevG", "request":"addLanguage", "lang":"WhatLanguagecode"}`
+When adding a language (`lang`) you have to use a `userId` and `password` or only users `key`. Why is becuase you can only add a `lang` to a person and it will fall into the existing languages. But on the users profile they will only have the languages they have chosen. You need to do the `request` `addLanguage` to add a language to a profile and you can only add one at the time. And `lang` will be the language code you have to write a 3 letter long language code such as sve or eng.
+
+### Remove a Language from a userId
+`{"userId":"usersUserId","password":"userPassword","key":"DevG", "request":"removeLanguage", "lang":"WhatLanguagecode"}`
+When removing a language (`lang`) you have to use a `userId` and `password` or only users `key`. Why is becuase you can only remove a `lang` from a person and if it was alone it will get removed from all the existing languages. You need to do the `request` `removeLanguage` to remove a language from a profile and you can only remove one at the time.
+
+## User / `userId`
+`{"userId": "YourUserId"}`
+`userId` is used to know which user is doing the action and is needed in every `POST` if you want to do an action that do not require a `userId` you can use the `userId` `devGuest`.
+
+### List all Users
+`{"userId":"DoesUserExist","key":"DevG", "request":"listUsers"}`
+When listing users you can chose to either to check if a user exists by using a `userId` and you will get back a `bool` else if you do not include or leave it empty it will list every `userId` by name.
+`None`
+If you send;
+{
+    "request":"listUsers"
+}
+You get back;
+{
+    "users": [
+        "Tor",
+        "Admin",
+        "test",
+        "AlcuradApi",
+        "TheNews"
+    ]
+}
+If you send;
+{
+    "userId":"AlcuradApi",
+    "request":"listUsers"
+}
+You get back;
+{
+    "exists": true
+}
+`None`
+
+### Add a new User
+`{"userId":"usersUserId","password":"usersPassword","request":"addUser"}`
+You want a new profile/user, if that is the case you'll need a `request` with `addUser`. Then it will need a `password` and `userId`. In return you'll get a success message and a `key`.
+
+### Remove a User
+`{"userId":"usersUserId","password":"usersPassword","key":"DevG", "request":"removeUser"}`
+To remove a profile/user by the `API` you'll need to include the profiles `userId`, `password` and `key`. And to do this you'll need to do a `removeUser` `request`.
+
+# Styling & Formatting
+
+For styling & formatting there are multiple diffrent commands put in such as for background color, text color, text size, text font, highlight, links and so much more. If you want to look at the diffent ones just go the the webbsite and go into the document `Formatting and Styling` and then there they all are displayed both in use and not.
+## Format for saving;
+### Headers
+To make an `header` you´ll just need to use an `#` or `##` debending on a `Header` or a `Subheader` in the saving file the text using # or ## will be saved with the key as `h1` or `h2` respectivly like example below.
+
+`None`
+# if you write a header as this
+## or this it will be saved as
+
+[{"eng":[{"h1":"if you write a header as this"},{"h2":"or this it will be saved as"}]}]
+`None`
+
+for the selected `language` and `document`.
+
+### General text
+When writing general text it will be saved under the key `"p"` and in general all text is saved that way execept when it comes to the headers and empty line when writing normal text it will be saved as show below;
+
+`None`
+Normal text
+
+[{"eng":[{"p":"normal text"}]}]
+`None`
+
+and if writing on multiple lines it looks like this
+
+`None`
+Normal text
+even more
+Normal text
+
+[{"eng":[{"p":"Normal text"},{"p":"even more"},{"p":"Normal text"}]}]
+`None`
+and so it does for the selected `language` and `document`.
+
+### Empty line
+on an empty line it will just save as
+`None`
+[{"eng":[{"n":"down"}]}]
+`None`
+
+for selected `language` and `document`.
+
+## Formatting
+Formatting works for both `general text` and `headers`.
+### Bold
+When wanting to format a text to be **`bold`** you use ** on each side of the text such as `**Bold**` == `**Bold**`. It will just save the text with ** on each side as example below.
+
+I write a `**Bold text**`
+`None`
+[{"eng":[{"p":"I write a **Bold text**"}]}]
+`None`
+
+### Italic
+When wanting to format a text to be *`Italic`* you use `*` on each side of the text such as `*Italic*` == `*Italic*`. It will hust save the text with `*` on each side as example below.
+
+I write in `*Italic*`
+`None`
+[{"eng":[{"p":"I write in *Italic*"}]}]
+`None`
+
+### Underscore
+When wanting to format a text to be __`Underscore`__ you use `__` on each side of the text such as `__Underscore__` == `__Underscore__`. It will hust save the text with `__` on each side as example below.
+
+I write with a `__Underscore__`
+`None`
+[{"eng":[{"p":"I write with an __Underscore__"}]}]\n```
+`None`
+
+### Drawn over (strikethrough)
+When wanting to format a text to be ~~`Strikethrough`~~ you use `~~` on each side of the text such as `~~Strikethrough~~` == `~~Strikethrough~~`. It will hust save the text with `~~` on each side as example below.
+
+I write with a `~~Strikethrough~~`
+`None`
+[{"eng":[{"p":"I write with an ~~Strikethrough~~"}]}]\n```
+`None`
+
+### Link
+When wanting to insert a `link` into text you use `[]()` where you put the displayed text into `[]` and the link into `()`. [Link](https:/www.example.se) == `[Link](https:/www.example.se)`.
+it.
+
+an [Link](https:/www.example.se) as an example
+`None`
+[{"eng":[{"p":"an [Link](https:/www.example.se) as an example"}]}]
+`None`
+
+## Styling
+Styling works for both `general text` and `headers`.
+it will only change the text that is inside the command prompts all outside will be unaffected
+### Text Color
+When you want to change the color of text you use the short command color to write with a special color if you write `color.red` before the text with the command symbol ` on eathier side of the command. Then write color with the command symbol on either side of the command it will change the color this works with color name, rgb(), and whatever php can accept.
+
+It is saved as following if the text i want to save is;
+`None`
+    I want to save `color.red` red coloring `color` and `color.rgba(214, 96, 96, 0.35)` one semi transperent red `color`
+`None`
+`None`
+[{"eng":[{"p":"I want to save `color.red` red coloring `color` and `color.rgba(214, 96, 96, 0.35)` one semi transperent red `color`"}]}]
+`None`
+
+### Text size
+When you want to change the size of text you use the short command size to write with a diffrent size. If you write `size.1` before the text with the command symbol ` on eathier side of the command. Then write size with the command symbol on either side of the command it will change the size.
+
+`size.1` is original size.
+
+It is saved as following if the text i want to save is;
+`None`
+    I want to save `size.2` sizeing `size`.
+`None`
+`None`
+[{"eng":[{"p":"I want to save `size.2` sizeing `size`."}]}]
+`None`
+
+### Text font
+When you want to change the font of text you use the short command font to write with a diffrent font. If you write `font.` before the text with a font like impact after the . and with the command symbol ` on eathier side of the command. Then write font with the command symbol on either side of the command it will change the font.
+
+It is saved as following if the text i want to save is;
+`None`
+    I want to save `font.impact` the font `font`.
+`None`
+`None`
+[{"eng":[{"p":"I want to save `font.impact` the font `font`."}]}]
+`None`
+
+### Background color
+When you want to change the background color of text you use the short command bg to write with a background color. If you write `bg.red` before the text. Then write bg with the command symbol ` on either side of the command it will change the background color this works with color name, rgb(), and whatever php can accept.
+
+It is saved as following if the text i want to save is;
+`None`
+    I want to save `bg.red` red coloring `bg` and `bg.rgba(214, 96, 96, 0.35)` one semi transperent red `bg`
+`None`
+`None`
+[{"eng":[{"p":"I want to save `bg.red` red coloring `bg` and `bg.rgba(214, 96, 96, 0.35)` one semi transperent red `bg`"}]}]
+`None`
+
+### Boxed in (Highlight)
+If you want to box in/ highlight text you write `` on either side. It saves with them.
+
+### Text alignment
+If you want to align text on the vertical axis you use `Vertical.` where if you put L|C|R after the dot you align the entire line in that oriangtation where L|C|R are left|center|right respectivly. If you put `Vertical` after it will only align the text within the the two.
+
+It saves as the others example if i want to save;
+`None`
+    `Vertical.R` Right end of the line `Vertical` `Vertical.L` Normal/at the beginning `Vertical` and `Vertical.C` Centered on the line `Vertical`
+`None`
+you'll get;
+
+`None`
+[{"eng":[{"p":"`Vertical.R` Right end of the line `Vertical` `Vertical.L` Normal/at the beginning `Vertical` and `Vertical.C` Centered on the line `Vertical`"}]}]
+`None`
+
+### No Styling and formatting
+if you want to styling but want to write * # and the others you write `None` on both sides and saves with them as written in.

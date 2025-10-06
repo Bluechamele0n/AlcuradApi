@@ -1,5 +1,6 @@
 <?php
 
+include 'apidocumentation.php';
 include 'dokumenthandler.php';
 include 'profilehandler.php';
 include 'languagehandler.php';
@@ -108,6 +109,9 @@ function page($page, $yourId = null, $docName = null, $langId = null) {
             if (isset($content[$yourId]) && $docName === null) {
                 languangeChoser($yourId,false);
             }
+            break;
+        case "apidocmd":
+            displayDocumentation(__DIR__ . '/../documentation.md');
             break;
         default:
             echo "Error: Invalid page.";
@@ -401,6 +405,9 @@ function homepage($langId = "swe") {
     echo '<div class="header">';
     echo '<h1>'.$tag1.'</h1>';
     echo '<p>'.$tag2.'</p>';
+    echo '<form method="POST" action="">';
+    echo '<button type="submit" name="apiDocButton" formaction="" class="btn btn-docs" onclick="window.location.href=\'?page=apidocmd\'">API Documentation</button>';
+    echo '<form>';
     echo '</div>';
 
     echo '<div class="card auth-card">';
@@ -545,6 +552,12 @@ function requests() {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['homepageLangChange'])) {
         $_SESSION['langId'] = $_POST['langId'];
         page("home");
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apiDocButton'])) {
+        // Preserve language selection when going to API documentation
+        $preservedLang = isset($_POST['langId']) ? $_POST['langId'] : null;
+        $_POST = $preservedLang ? ['langId' => $preservedLang] : [];
+        page("apidocmd");
+        $_POST["apiVersion"] = false; // to prevent re-submission
     }
         
 

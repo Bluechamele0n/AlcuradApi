@@ -53,41 +53,51 @@ function openDocument($docName, $userId, $langId = null, $editorpageContent) {
     renderEditor($docName, $langToBlocks[$langId], $userId, $langId, $editorpageContent);
 }
 
+// Before saving, replace all semicolons in the decoded JSON with \x3B
+function convertSemicolonsToHex($arr) {
+    foreach ($arr as &$block) {
+        foreach ($block as $key => &$value) {
+            if (is_string($value)) {
+                $value = str_replace(';', '\x3B', $value);
+            }
+        }
+    }
+    return $arr;
+}
+
 if (isset($_POST['saveDoc'])) {
     $docName = $_POST['docName'];
     $userId = $_POST['userId'];
-    $jsonContent = $_POST['tempJson'];
-    $selectedLang = isset($_POST['langId']) ? $_POST['langId'] : 'eng';
+    $selectedLang = $_POST['langId'] ?? 'eng';
+    $newContent = json_decode($_POST['tempJson'], true) ?: [];
 
+    // Convert all semicolons to \x3B
+    //$newContent = convertSemicolonsToHex($newContent);
+
+    // Update your content array
     $existing = $content[$userId][$docName] ?? [];
     if (is_string($existing)) $existing = json_decode($existing, true);
     if (!is_array($existing)) $existing = [];
 
-    // Convert to lang map + order
-    $langOrder = [];
-    $langToBlocks = [];
-    foreach ($existing as $langObj) {
-        if (!is_array($langObj)) continue;
-        foreach ($langObj as $k => $v) {
-            $langOrder[] = $k;
-            $langToBlocks[$k] = is_array($v) ? $v : [];
+    $langFound = false;
+    foreach ($existing as &$langObj) {
+        if (is_array($langObj) && array_key_exists($selectedLang, $langObj)) {
+            $langObj[$selectedLang] = $newContent;
+            $langFound = true;
+            break;
         }
     }
-
-    $langToBlocks[$selectedLang] = json_decode($jsonContent, true) ?: [];
-    if (!in_array($selectedLang, $langOrder, true)) $langOrder[] = $selectedLang;
-
-    // Rebuild array-of-language-objects in original order
-    $rebuilt = [];
-    foreach ($langOrder as $k) {
-        $rebuilt[] = [$k => $langToBlocks[$k]];
+    if (!$langFound) {
+        $existing[] = [$selectedLang => $newContent];
     }
 
-    $content[$userId][$docName] = $rebuilt;
-    // show the content of the document in a readable way
+    $content[$userId][$docName] = $existing;
 
+    // Finally save
     writeIni($content);
 }
+
+
 
 function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpageContent) {
     if (is_string($docBlocksForLang)) $docBlocksForLang = json_decode($docBlocksForLang, true);
@@ -99,10 +109,17 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
     foreach ($docBlocksForLang as $i => $block) {
         if (!is_array($block)) continue;
         foreach ($block as $key => $value) {
+            if (strpos($value, 'x3Bcol※') !== false) {
+                $value = str_replace('x3Bcol※', ';', $value);
+            }
+            
             if ($key === "h1") $text .= "# " . $value;
             elseif ($key === "h2") $text .= "## " . $value;
+            elseif ($key === "h3") $text .= "### " . $value;
             elseif ($key === "p") $text .= $value;
             elseif ($key === "n") $text .= "";
+            // if anywhere in value contains x3Bcol※ replace it with ;
+
         }
         if ($i !== $lastIndex) $text .= "\n";
     }
@@ -184,12 +201,14 @@ function updateTempJson() {
             jsonArray.push({n:"down"});
             continue;
         }
-        if (line.startsWith("##")) {
-            jsonArray.push({h2: line.replace(/^##\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
+        if (line.startsWith("###")) {
+            jsonArray.push({h3: line.replace(/^###\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
+        }else if (line.startsWith("##")) {
+            jsonArray.push({h2: line.replace(/^##\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
         } else if (line.startsWith("#")) {
-            jsonArray.push({h1: line.replace(/^#\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
+            jsonArray.push({h1: line.replace(/^#\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
         } else {
-            jsonArray.push({p: line.replace(/"/g, '\u201C').replace(/"/g, '\u201D')});
+            jsonArray.push({p: line.replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
         }
     }
 
@@ -222,6 +241,7 @@ function renderPreview() {
             // Basic formatting
             formatted = formatted.replace(/"/g, '\u201C'); // left double quote
             formatted = formatted.replace(/"/g, '\u201D'); // right double quote
+            formatted = formatted.replace(/x3Bcol※/g, ';'); // semicolon
             formatted = formatted.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
             formatted = formatted.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
             formatted = formatted.replace(/__(.*?)__/g, "<u>$1</u>");
@@ -243,8 +263,8 @@ function renderPreview() {
         
         }
 
-
-        if (line.startsWith("##")) html += "<h2>" + formatted.replace(/^##\\s*/, "") + "</h2>";
+        if (line.startsWith("###")) html += "<h3>" + formatted.replace(/^###\\s*/, "") + "</h3>";
+        else if (line.startsWith("##")) html += "<h2>" + formatted.replace(/^##\\s*/, "") + "</h2>";
         else if (line.startsWith("#")) html += "<h1>" + formatted.replace(/^#\\s*/, "") + "</h1>";
         else html += "<div>" + formatted + "</div>";
     }
