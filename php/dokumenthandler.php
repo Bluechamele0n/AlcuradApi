@@ -112,7 +112,9 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
             if (strpos($value, 'x3Bcol※') !== false) {
                 $value = str_replace('x3Bcol※', ';', $value);
             }
-            
+            if (strpos($value, 'x201Cdot※') !== false) {
+                $value = str_replace('x201Cdot※', '"', $value);
+            }
             if ($key === "h1") $text .= "# " . $value;
             elseif ($key === "h2") $text .= "## " . $value;
             elseif ($key === "h3") $text .= "### " . $value;
@@ -154,7 +156,7 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
 
         <div class="form-row">
             <div class="editor-container">
-                <textarea id="editor" placeholder=$tag5>{$text}</textarea>
+                <textarea id="editor" style="font-size:1vw;" placeholder=$tag5>{$text}</textarea>
             </div>
 
             <div class="preview-container">
@@ -202,13 +204,13 @@ function updateTempJson() {
             continue;
         }
         if (line.startsWith("###")) {
-            jsonArray.push({h3: line.replace(/^###\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
+            jsonArray.push({h3: line.replace(/^###\\s*/, "").replace(/"/g, 'x201Cdot※').replace(/;/g, 'x3Bcol※')});
         }else if (line.startsWith("##")) {
-            jsonArray.push({h2: line.replace(/^##\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
+            jsonArray.push({h2: line.replace(/^##\\s*/, "").replace(/"/g, 'x201Cdot※').replace(/;/g, 'x3Bcol※')});
         } else if (line.startsWith("#")) {
-            jsonArray.push({h1: line.replace(/^#\\s*/, "").replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
+            jsonArray.push({h1: line.replace(/^#\\s*/, "").replace(/"/g, 'x201Cdot※').replace(/;/g, 'x3Bcol※')});
         } else {
-            jsonArray.push({p: line.replace(/"/g, '\u201C').replace(/"/g, '\u201D').replace(/;/g, 'x3Bcol※')});
+            jsonArray.push({p: line.replace(/"/g, 'x201Cdot※').replace(/;/g, 'x3Bcol※')});
         }
     }
 
@@ -236,11 +238,39 @@ function renderPreview() {
             if (noneMatch) {
                 formatted = noneMatch[1]; // keep raw text only
             }
+        
+        }   else if (/`Json\.pre`/.test(formatted)) {
+            // Decode semicolon and quotes first
+            formatted = formatted.replace(/x3Bcol※/g, ';');
+            formatted = formatted.replace(/x201Cdot※/g, '"');
+            // Handle `Json.pre` blocks line-safely
+            formatted = formatted.replace(/`Json\.pre`\s*([\s\S]*?)\s*`Json`/g, (match, p1) => {
+                let jsonText = p1.trim();
+                let pretty;
+
+                try {
+                    // Parse and pretty-print JSON
+                    const data = JSON.parse(jsonText);
+                    pretty = JSON.stringify(data, null, 2);
+                } catch (err) {
+                    // Show raw text if it isn’t valid JSON
+                    pretty = jsonText;
+                }
+
+                // Use <pre><code> for proper text display
+                return `<pre style="
+                    background:#f4f4f4;
+                    padding:10px;
+                    border-radius:4px;
+                    overflow-x:auto;
+                    font-family:monospace;
+                    white-space:pre;
+                ">\${pretty}</pre>`;
+            });
         } else {
         
             // Basic formatting
-            formatted = formatted.replace(/"/g, '\u201C'); // left double quote
-            formatted = formatted.replace(/"/g, '\u201D'); // right double quote
+            formatted = formatted.replace(/x201Cdot※/g, '"'); // right double quote
             formatted = formatted.replace(/x3Bcol※/g, ';'); // semicolon
             formatted = formatted.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
             formatted = formatted.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
@@ -252,7 +282,8 @@ function renderPreview() {
             formatted = formatted.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
             formatted = formatted.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
             formatted = formatted.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
-
+            formatted = formatted.replace(/^(\s*[-*])\s+(.*)/gm,"<ul><li>$2</li></ul>");
+            formatted = formatted.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
             // Size, Color, Background, Code, Links
             formatted = formatted.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
             formatted = formatted.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
@@ -266,7 +297,7 @@ function renderPreview() {
         if (line.startsWith("###")) html += "<h3>" + formatted.replace(/^###\\s*/, "") + "</h3>";
         else if (line.startsWith("##")) html += "<h2>" + formatted.replace(/^##\\s*/, "") + "</h2>";
         else if (line.startsWith("#")) html += "<h1>" + formatted.replace(/^#\\s*/, "") + "</h1>";
-        else html += "<div>" + formatted + "</div>";
+        else html += "<div style='font-size:1vw;'>" + formatted + "</div>";
     }
 
     livePreview.innerHTML = html;
@@ -479,16 +510,19 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         // Keep raw text only
                         $formatted = $matches[1];
                     } else {
+                        $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
                         $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Json`\s(.*?)\s`Json`/', '<pre style="background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;">$1</pre>', $formatted);
                         $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/^(\s*[-*])\s+(.*)/m', '<ul><li>$2</li></ul>', $formatted);
                         $formatted = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $formatted);
                         $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
                         $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
@@ -503,14 +537,17 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         // Keep raw text only
                         $formatted = $matches[1];
                     } else {
+                        $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
                         $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Json`\s(.*?)\s`Json`/', '<pre style="background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;">$1</pre>', $formatted);
                         $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
+                        $formatted = preg_replace('/^(\s*[-*])\s+(.*)/m', '<ul><li>$2</li></ul>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $formatted);
@@ -527,14 +564,37 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                     if (preg_match('/`None`\s([\s\S]*?)\s`None`/', $formatted, $matches)) {
                         // Keep raw text only
                         $formatted = $matches[1];
-                    } else {
+                    } else if (preg_match('/`Json.pre`\s(.*?)\s`Json`/s', $formatted)) {
+                        $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
+                        $formatted = preg_replace('/x201Cdot※/', '"', $formatted); // left double quote
+                        $formatted = preg_replace_callback('/`Json.pre`\s(.*?)\s`Json`/s', function($matches) {
+                            $jsonText = trim($matches[1]);
+                            $data = json_decode($jsonText, true);
+                        
+                            // If valid JSON, pretty print it; else keep the raw text
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $pretty = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                            } else {
+                                $pretty = htmlspecialchars($jsonText); // fallback for invalid JSON
+                            }
+                        
+                            return "<pre style=\"background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;\">" . $pretty . "</pre>";
+                        }, $formatted);
+                        
+                    } else{
+
+                        $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
+                        $formatted = preg_replace('/x201Cdot※/', '"', $formatted); // left double quote
                         $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
                         $formatted = preg_replace('/`Vertical\.L`\s+(.*)/m', '<div style="text-align:left;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s+(.*)/m', '<div style="text-align:right;">$1</div>', $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s+(.*)/m', '<div style="text-align:center;">$1</div>', $formatted);
+                        $formatted = preg_replace('/`Json`\s(.*?)\s`Json`/', '<pre style="background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;">$1</pre>', $formatted);
+
                         $formatted = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $formatted);
+                        $formatted = preg_replace('/^(\s*[-*])\s+(.*)/m', '<ul><li>$2</li></ul>', $formatted);
                         $formatted = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $formatted);
                         $formatted = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $formatted);
                         $formatted = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $formatted);
