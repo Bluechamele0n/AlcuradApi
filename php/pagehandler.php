@@ -6,6 +6,7 @@ include 'profilehandler.php';
 include 'languagehandler.php';
 
 
+
 session_start();
 
 
@@ -135,7 +136,7 @@ function openUserPage($userid) {
         return;
     }
 
-    echo '<link rel="stylesheet" href="./css/pagehandlercss.css">';
+    echo '<link rel="stylesheet" href="./css/alcurad.css">';
 
     if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['userdashboard'])) {
         echo '<div class="alert-error"><h3>Error: No user dashboard content found</h3><p>Please contact the administrator.</p></div>';
@@ -215,8 +216,10 @@ function openUserPage($userid) {
 
     // Header
     echo '<div class="header">';
+    echo '<div class="left-header">';
     echo '<h1>'.$tag1.'</h1>';
     echo '<p>'.$tag2.'<strong>' . htmlspecialchars($userid) . '</strong></p>';
+    echo '</div>';
     showUsersKey($userid, $tag21);
     echo '</div>';
 
@@ -278,6 +281,7 @@ function openUserPage($userid) {
     // Account Actions
     echo '<div class="card account-header">';
     echo '<h3>'.$tag16.'</h3>';
+    echo '<div class="btn-group-account">';
     echo '<form method="POST" action="" class="flex-gap">';
     echo "<input type='hidden' name='langId' value='" . htmlspecialchars($_SESSION['langId']). "'>";
     echo '<button type="submit" name="logoutButton" class="btn-logout">'.$tag17.'</button>';
@@ -288,6 +292,7 @@ function openUserPage($userid) {
     echo '<input type="hidden" name="userId" value="' . htmlspecialchars($userid) . '">';
     echo '<button type="submit" name="accountRemoveButton" class="btn-remove">'.$tag18.'</button>';
     echo '</form>';
+    echo '</div>';
     echo '</div>';
 
     echo '</div>'; // End main-container
@@ -379,6 +384,33 @@ function homepage($langId = "swe") {
         }
     }
 
+    if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['InfoCard'])) {
+        echo "Error: No Infocard content found.";
+        return;
+    }
+    
+    $infoCardContent = $content['AlcuradApi']['InfoCard'];
+    $selectedLang = $_SESSION['langId'] ?? $langId;
+    $langBlock2 = null;
+
+    foreach ($infoCardContent as $langEntry) {
+        if (isset($langEntry[$selectedLang])) {
+            $langBlock2 = $langEntry[$selectedLang];
+            break;
+        }
+    }
+
+    // fallback to English if not found
+    if ($langBlock2 === null) {
+        foreach ($infoCardContent as $langEntry) {
+            if (isset($langEntry['eng'])) {
+                $langBlock2 = $langEntry['eng'];
+                break;
+            }
+        }
+    }
+    
+    $infoCardContent = $langBlock2;
     $homepageContent = $langBlock;  
     $tag1 = $homepageContent[0];
     $tag1 = $tag1['p'];
@@ -400,7 +432,9 @@ function homepage($langId = "swe") {
     $tag14 = $tag14['p'];
     
 
-    echo '<link rel="stylesheet" href="./css/homepagecss.css">';
+
+    echo '<link rel="stylesheet" href="./css/alcurad.css">';
+    echo '<div class="main-container">';
     echo '<div class="header">';
     echo '<div class="left-header">';
     echo '<h1>'.$tag1.'</h1>';
@@ -412,8 +446,8 @@ function homepage($langId = "swe") {
     echo "<input type='hidden' name='langId' value='all'>";
     echo "<input type='hidden' name='viewDoc' value='1'>";
     echo '<button type="submit" name="docButton" value="ApiDocumentation" id="apiDocButton" class="btn btn-docs">';
-    echo '<img src="favicon.ico" alt="API Docs" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;">';
-    echo 'API Documentation';
+    echo '<img src="favicon.ico" alt="API Docs" class="btn-icon">';
+    echo 'Documentation';
     echo '</button>';
     echo '</form>';
     echo '</div>';
@@ -422,31 +456,39 @@ function homepage($langId = "swe") {
     // echo '<form>';
     echo '</div>';
 
+    echo '<div class="utility-card">';
     echo '<div class="card auth-card">';
+    echo '<div class="input-group">';
     echo '<h3>'.$tag3.'</h3>';
     echo '<form method="POST" action="">';
     echo '<input type="hidden" name="langId" value="' . htmlspecialchars($_SESSION['langId']) . '">';
 
     echo '<div class="form-group">';
-    echo '<input type="text" name="userName" placeholder="'.$tag10.'">';
-    echo '</div>';
-
-    echo '<div class="form-group">';
     echo '<input type="password" name="password" placeholder="'.$tag11.'">';
     echo '</div>';
 
+    echo '<div class="form-group">';
+    echo '<input type="text" name="userName" placeholder="'.$tag10.'">';
+    echo '</div>';
+
+    echo '</div>';
+    echo '<div class="btn-group">';
+    echo '<button type="submit" name="changePasswordButton" class="btn btn-change">'.$tag14.'</button>';
     echo '<button type="submit" name="loginButton" class="btn btn-login">'.$tag12.'</button>';
     echo '<button type="submit" name="registerButton" class="btn btn-register">'.$tag13.'</button>';
-    echo '<button type="submit" name="changePasswordButton" class="btn btn-change">'.$tag14.'</button>';
-
+    echo '</div>';
     echo '</form>';
     echo '</div>';
+    echo '<div class="card info-card">';
+    echo displayMarkdownAsHtml($infoCardContent);
+    echo '</div>';
+    echo '</div>'; // end utility card
 
     echo '<div class="card doc-card">';
     echo '<h3>'.$tag4.'</h3>';
     loadAllPages(true, $langId, $homepageContent);
     echo '</div>';
-
+    echo '</div>'; // end main container
 
 
     
@@ -815,7 +857,7 @@ function loadAllPages($active, $langId = "swe", $homepageContent) {
             echo "<input type='hidden' name='userId' value='" . htmlspecialchars($doc['userId']) . "'>";
             echo "<input type='hidden' name='langId' value='" . htmlspecialchars($language) . "'>";
             echo "<input type='hidden' name='viewDoc' value='1'>";
-            echo "<button type='submit' name='docButton' value='" . htmlspecialchars($doc['docName']) . "' style='padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;'>";
+            echo "<button type='submit' name='docButton' value='" . htmlspecialchars($doc['docName']) . "' class='btn-docs'>";
             echo $tag9.' ' . htmlspecialchars($doc['docName']);
             echo "</button>";
             echo "</form>";

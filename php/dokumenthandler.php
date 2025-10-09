@@ -161,7 +161,7 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
     
 <div class="container">
     <div class="header-card">
-        <link rel="stylesheet" href="./css/pagescss.css">
+        <link rel="stylesheet" href="./css/alcurad.css">
         <h1>$tag1</h1>
         <p><strong>{$docName}</strong></p>
     </div>
@@ -189,9 +189,9 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
         </div>
 
         <div class="form-buttons">
-            <button type="submit" name="saveDoc">💾 $tag2</button>
-            <button type="button" id="toggleJson">$tag3</button>
-            <button type="submit" name="backDocButton">⬅️ $tag4</button>
+            <button type="submit" class="editor-btns" name="saveDoc">💾 $tag2</button>
+            <button type="button" class="editor-btns" id="toggleJson">$tag3</button>
+            <button type="submit" class="editor-btns" name="backDocButton">⬅️ $tag4</button>
         </div>
     </form>
 </div>
@@ -280,7 +280,7 @@ function renderPreview() {
                 ">\${pretty}</pre>`;
             });
         } else {
-        
+            
             // Basic formatting
             formatted = formatted.replace(/x201Cdot※/g, '"'); // right double quote
             formatted = formatted.replace(/x3Bcol※/g, ';'); // semicolon
@@ -537,10 +537,7 @@ function addNewDocument($userid, $NewDocName, $fromapi = false) {
         }
 
         // Create new doc with language keys
-        $content[$userid][$NewDocName] = [
-            "eng" => [],
-            "sve" => []
-        ];
+        $content[$userid][$NewDocName] = [];
 
         writeIni($content);
 
