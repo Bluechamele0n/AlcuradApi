@@ -68,8 +68,8 @@ function convertSemicolonsToHex($arr) {
     }
     return $arr;
 }
-
-if (isset($_POST['saveDoc'])) {
+// and or isset($_POST['changeNameBtn'])
+if (isset($_POST['saveDoc']) ) {
     $docName = $_POST['docName'];
     $userId = $_POST['userId'];
     $selectedLang = $_POST['langId'] ?? 'eng';
@@ -99,6 +99,18 @@ if (isset($_POST['saveDoc'])) {
 
     // Finally save
     writeIni($content);
+
+    if (isset($_POST['newDocName']) && $_POST['newDocName'] !== $docName) {
+        $newDocName = $_POST['newDocName'];
+        // Rename the document key in the content array
+        if (isset($content[$userId][$docName])) {
+            $content[$userId][$newDocName] = $content[$userId][$docName];
+            unset($content[$userId][$docName]);
+            writeIni($content);
+            $_POST[] = "updatedocName";
+            $_POST['docName'] = $newDocName;
+        }
+    }
 }
 
 
@@ -108,6 +120,7 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
     if (!is_array($docBlocksForLang)) $docBlocksForLang = [];
 
     // Build editor text
+    $thedocName = $docName;
     $text = "";
     $lastIndex = count($docBlocksForLang) - 1;
     foreach ($docBlocksForLang as $i => $block) {
@@ -143,17 +156,19 @@ function renderEditor($docName, $docBlocksForLang, $userId, $langId, $editorpage
     $tag5 = $editorpageContent[4];
     $tag5 = $tag5['p'];
 
+
     echo <<<HTML
     
 <div class="container">
     <div class="header-card">
+        <link rel="stylesheet" href="./css/pagescss.css">
         <h1>$tag1</h1>
         <p><strong>{$docName}</strong></p>
-        <link rel="stylesheet" href="./css/pagescss.css">
     </div>
 
     <form method="post">
-        <input type="hidden" name="docName" value="{$docName}">
+        <textarea id="thedocName" name="newDocName" placeholder="{$docName}" style="resize:none;">{$thedocName}</textarea>
+        <input type="hidden" id=$docName name="docName" value="{$docName}">
         <input type="hidden" name="userId" value="{$userId}">
         <input type="hidden" name="langId" value="{$langId}">
         <input type="hidden" id="tempJson" name="tempJson" value='{$jsonContent}'>
@@ -236,14 +251,7 @@ function renderPreview() {
         let formatted = escapeHtml(line);
         // format `None` text `None` to not be formatted 
         
-        if (formatted.match(/\`None`\s([\s\S]*?)\s\`None`/)) {
-            // Extract the content between `None` markers
-            const noneMatch = formatted.match(/\`None`\s([\s\S]*?)\s\`None`/);
-            if (noneMatch) {
-                formatted = noneMatch[1]; // keep raw text only
-            }
-        
-        }   else if (/`Json\.pre`/.test(formatted)) {
+        if (/`Json\.pre`/.test(formatted)) {
             // Decode semicolon and quotes first
             formatted = formatted.replace(/x3Bcol※/g, ';');
             formatted = formatted.replace(/x201Cdot※/g, '"');
@@ -298,6 +306,91 @@ function renderPreview() {
         
         }
 
+        if (/`None`/.test(line)) {
+            formatted = line.replace(/^(.*?)`None`([\s\S]*?)`None`(.*)$/s, (match, p1, p2, p3) => {
+            // Reverse formatting for the content inside `None`
+            let reversed = p2;
+            reversed = reversed.replace(/<b>(.*?)<\/b>/g, "**$1**");
+            reversed = reversed.replace(/<i>(.*?)<\/i>/g, "*$1*");
+            reversed = reversed.replace(/<u>(.*?)<\/u>/g, "__$1__");
+            reversed = reversed.replace(/<s>(.*?)<\/s>/g, "~~$1~~");
+            reversed = reversed.replace(/<span style='float:left; text-align:left;'>(.*?)<\/span>/g, "`Vertical.L` $1 `Vertical`");
+            reversed = reversed.replace(/<span style='float:right; text-align:right;'>(.*?)<\/span>/g, "`Vertical.R` $1 `Vertical`");
+            reversed = reversed.replace(/<span style='display:inline-block; width:100%; text-align:center;'>(.*?)<\/span>/g, "`Vertical.C` $1 `Vertical`");
+            reversed = reversed.replace(/<div style='text-align:left;'>(.*?)<\/div>/g, "`Vertical.L` $1 `Vertical`");
+            reversed = reversed.replace(/<div style='text-align:right;'>(.*?)<\/div>/g, "`Vertical.R` $1 `Vertical`");
+            reversed = reversed.replace(/<div style='text-align:center;'>(.*?)<\/div>/g, "`Vertical.C` $1 `Vertical`");
+            reversed = reversed.replace(/<ul><li>(.*?)<\/li><\/ul>/g, "- $1");
+            reversed = reversed.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+            reversed = reversed.replace(/<span style='font-family:(.*?);'>(.*?)<\/span>/g, "`font.$1` $2 `font`");
+            reversed = reversed.replace(/<span style='font-size:(.*?)px;'>(.*?)<\/span>/g, "`size.$1` $2 `size`");
+            reversed = reversed.replace(/<span style='color:(.*?);'>(.*?)<\/span>/g, "`color.$1` $2 `color`");
+            reversed = reversed.replace(/<span style='background-color:(.*?); padding:2px 4px; border-radius:4px;'>(.*?)<\/span>/g, "`bg.$1` $2 `bg`");
+            reversed = reversed.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+            reversed = reversed.replace(/<a href="(.*?)" target="_blank">(.*?)<\/a>/g, "[$2]($1)");
+
+            // Debug
+            //console.log("Reversed:", reversed);
+            //console.log("Original:", p2);
+            //console.log("p1:", p1);
+            //console.log("p3:", p3);
+            
+            // Recursively process p1 and p3 in case they contain more `None` blocks
+            let before = p1;
+            let after = p3;
+            // Restore special characters
+            before = before.replace(/x201Cdot※/g, '"'); // right double quote
+            before = before.replace(/x3Bcol※/g, ';'); // semicolon
+            before = before.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
+            before = before.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
+            before = before.replace(/__(.*?)__/g, "<u>$1</u>");
+            before = before.replace(/~~(.*?)~~/g, "<s>$1</s>");
+            before = before.replace(/\`Vertical\.L`\s(.*?)\s\`Vertical`/g, "<span style='float:left; text-align:left;'>$1</span>");
+            before = before.replace(/\`Vertical\.R`\s(.*?)\s\`Vertical`/g, "<span style='float:right; text-align:right;'>$1</span>");
+            before = before.replace(/\`Vertical\.C`\s(.*?)\s\`Vertical`/g, "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>");
+            before = before.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
+            before = before.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
+            before = before.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
+            before = before.replace(/^(\s*[-*])\s+(.*)/gm,"<ul><li>$2</li></ul>");
+            before = before.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+            // Size, Color, Background, Code, Links
+            before = before.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
+            before = before.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
+            before = before.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
+            before = before.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
+            before = before.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+            before = before.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+
+            after = after.replace(/x201Cdot※/g, '"'); // right double quote
+            after = after.replace(/x3Bcol※/g, ';'); // semicolon
+            after = after.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
+            after = after.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
+            after = after.replace(/__(.*?)__/g, "<u>$1</u>");
+            after = after.replace(/~~(.*?)~~/g, "<s>$1</s>");
+            after = after.replace(/\`Vertical\.L`\s(.*?)\s\`Vertical`/g, "<span style='float:left; text-align:left;'>$1</span>");
+            after = after.replace(/\`Vertical\.R`\s(.*?)\s\`Vertical`/g, "<span style='float:right; text-align:right;'>$1</span>");
+            after = after.replace(/\`Vertical\.C`\s(.*?)\s\`Vertical`/g, "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>");
+            after = after.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
+            after = after.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
+            after = after.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
+            after = after.replace(/^(\s*[-*])\s+(.*)/gm,"<ul><li>$2</li></ul>");
+            after = after.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+            // Size, Color, Background, Code, Links
+            after = after.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
+            after = after.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
+            after = after.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
+            after = after.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
+            after = after.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+            after = after.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+
+            if (/`None`/.test(p1)) before = processNoneBlocks(p1);
+            if (/`None`/.test(p3)) after = processNoneBlocks(p3);
+
+            return before + reversed + after;
+        });
+    }
+ 
+
         if (line.startsWith("###")) html += "<h3>" + formatted.replace(/^###\\s*/, "") + "</h3>";
         else if (line.startsWith("##")) html += "<h2>" + formatted.replace(/^##\\s*/, "") + "</h2>";
         else if (line.startsWith("#")) html += "<h1>" + formatted.replace(/^#\\s*/, "") + "</h1>";
@@ -318,6 +411,92 @@ document.getElementById("toggleJson").addEventListener("click", () => {
 });
 
 
+function processNoneBlocks(text) {
+    // If no `None` tags, just format normally
+    if (!/`None`/.test(text)) return
+
+    // Otherwise, process the first `None` block
+    return text.replace(/^(.*?)`None`([\s\S]*?)`None`(.*)$/s, (match, p1, p2, p3) => {
+        // Recursively process p1 and p3 in case they contain more `None` blocks
+        let before = processNoneBlocks(p1);
+        let after = processNoneBlocks(p3);
+
+        // Reverse formatting for the content inside `None`
+        let reversed = p2;
+        reversed = reversed.replace(/<b>(.*?)<\/b>/g, "**$1**");
+        reversed = reversed.replace(/<i>(.*?)<\/i>/g, "*$1*");
+        reversed = reversed.replace(/<u>(.*?)<\/u>/g, "__$1__");
+        reversed = reversed.replace(/<s>(.*?)<\/s>/g, "~~$1~~");
+        reversed = reversed.replace(/<span style='float:left; text-align:left;'>(.*?)<\/span>/g, "`Vertical.L` $1 `Vertical`");
+        reversed = reversed.replace(/<span style='float:right; text-align:right;'>(.*?)<\/span>/g, "`Vertical.R` $1 `Vertical`");
+        reversed = reversed.replace(/<span style='display:inline-block; width:100%; text-align:center;'>(.*?)<\/span>/g, "`Vertical.C` $1 `Vertical`");
+        reversed = reversed.replace(/<div style='text-align:left;'>(.*?)<\/div>/g, "`Vertical.L` $1 `Vertical`");
+        reversed = reversed.replace(/<div style='text-align:right;'>(.*?)<\/div>/g, "`Vertical.R` $1 `Vertical`");
+        reversed = reversed.replace(/<div style='text-align:center;'>(.*?)<\/div>/g, "`Vertical.C` $1 `Vertical`");
+        reversed = reversed.replace(/<ul><li>(.*?)<\/li><\/ul>/g, "- $1");
+        reversed = reversed.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+        reversed = reversed.replace(/<span style='font-family:(.*?);'>(.*?)<\/span>/g, "`font.$1` $2 `font`");
+        reversed = reversed.replace(/<span style='font-size:(.*?)px;'>(.*?)<\/span>/g, "`size.$1` $2 `size`");
+        reversed = reversed.replace(/<span style='color:(.*?);'>(.*?)<\/span>/g, "`color.$1` $2 `color`");
+        reversed = reversed.replace(/<span style='background-color:(.*?); padding:2px 4px; border-radius:4px;'>(.*?)<\/span>/g, "`bg.$1` $2 `bg`");
+        reversed = reversed.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+        reversed = reversed.replace(/<a href="(.*?)" target="_blank">(.*?)<\/a>/g, "[$2]($1)");
+
+        let before2 = p1;
+        let after2 = p3;
+        // Restore special characters
+        before2 = before2.replace(/x201Cdot※/g, '"'); // right double quote
+        before2 = before2.replace(/x3Bcol※/g, ';'); // semicolon
+        before2 = before2.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
+        before2 = before2.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
+        before2 = before2.replace(/__(.*?)__/g, "<u>$1</u>");
+        before2 = before2.replace(/~~(.*?)~~/g, "<s>$1</s>");
+        before2 = before2.replace(/\`Vertical\.L`\s(.*?)\s\`Vertical`/g, "<span style='float:left; text-align:left;'>$1</span>");
+        before2 = before2.replace(/\`Vertical\.R`\s(.*?)\s\`Vertical`/g, "<span style='float:right; text-align:right;'>$1</span>");
+        before2 = before2.replace(/\`Vertical\.C`\s(.*?)\s\`Vertical`/g, "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>");
+        before2 = before2.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
+        before2 = before2.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
+        before2 = before2.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
+        before2 = before2.replace(/^(\s*[-*])\s+(.*)/gm,"<ul><li>$2</li></ul>");
+        before2 = before2.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+        // Size, Color, Background, Code, Links
+        before2 = before2.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
+        before2 = before2.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
+        before2 = before2.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
+        before2 = before2.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
+        before2 = before2.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+        before2 = before2.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+
+        after2 = after2.replace(/x201Cdot※/g, '"'); // right double quote
+        after2 = after2.replace(/x3Bcol※/g, ';'); // semicolon
+        after2 = after2.replace(/\\*\\*(.*?)\\*\\*/g, "<b>$1</b>");
+        after2 = after2.replace(/\\*(.*?)\\*/g, "<i>$1</i>");
+        after2 = after2.replace(/__(.*?)__/g, "<u>$1</u>");
+        after2 = after2.replace(/~~(.*?)~~/g, "<s>$1</s>");
+        after2 = after2.replace(/\`Vertical\.L`\s(.*?)\s\`Vertical`/g, "<span style='float:left; text-align:left;'>$1</span>");
+        after2 = after2.replace(/\`Vertical\.R`\s(.*?)\s\`Vertical`/g, "<span style='float:right; text-align:right;'>$1</span>");
+        after2 = after2.replace(/\`Vertical\.C`\s(.*?)\s\`Vertical`/g, "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>");
+        after2 = after2.replace(/\`Vertical\.L`\s+(.*)/gm, "<div style='text-align:left;'>$1</div>");
+        after2 = after2.replace(/\`Vertical\.R`\s+(.*)/gm, "<div style='text-align:right;'>$1</div>");
+        after2 = after2.replace(/\`Vertical\.C`\s+(.*)/gm, "<div style='text-align:center;'>$1</div>");
+        after2 = after2.replace(/^(\s*[-*])\s+(.*)/gm,"<ul><li>$2</li></ul>");
+        after2 = after2.replace(/\`Json`\s(.*?)\s\`Json`/g, "<pre style='background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;'>$1</pre>");
+        // Size, Color, Background, Code, Links
+        after2 = after2.replace(/\\`font\\.(.*?)\\`\\s(.*?)\\s\\`font\\`/g, "<span style='font-family:$1;'>$2</span>");
+        after2 = after2.replace(/\\`size\\.(.*?)\\`\\s(.*?)\\s\\`size\\`/g, "<span style='font-size:$1px;'>$2</span>");
+        after2 = after2.replace(/\\`color\\.(.*?)\\`\\s(.*?)\\s\\`color\\`/g, "<span style='color:$1;'>$2</span>");
+        after2 = after2.replace(/\\`bg\\.(.*?)\\`\\s(.*?)\\s\\`bg\\`/g, "<span style='background-color:$1; padding:2px 4px; border-radius:4px;'>$2</span>");
+        after2 = after2.replace(/\\`(.*?)\\`/g, "<code style='background:#eee; padding:2px 4px; border-radius:4px;'>$1</code>");
+        after2 = after2.replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href="$2" target="_blank">$1</a>'); // [text](url) -> <a href="url" target="_blank">text</a>
+
+        if (/`None`/.test(p1)) before2 = processNoneBlocks(p1);
+        if (/`None`/.test(p3)) after2 = processNoneBlocks(p3);
+
+        return before2 + reversed + after2;
+    });
+}
+
+
 // ✅ Sync scroll between editor and preview
 function syncScroll(source, target) {
     let ratio = source.scrollTop / (source.scrollHeight - source.clientHeight);
@@ -326,6 +505,9 @@ function syncScroll(source, target) {
 
 editor.addEventListener("scroll", () => syncScroll(editor, livePreview));
 livePreview.addEventListener("scroll", () => syncScroll(livePreview, editor));
+
+// if there is a change name button then add event listener to it
+
 
 
 
@@ -560,9 +742,11 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                 } elseif ($key === "p") {
                     // Convert markdown-like syntax to HTML
                     $formatted = htmlspecialchars($value);
-                    if (preg_match('/`None`\s([\s\S]*?)\s`None`/', $formatted, $matches)) {
-                        // Keep raw text only
-                        $formatted = $matches[1];
+                    $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
+                    $formatted = preg_replace('/x201Cdot※/', '"', $formatted); // left double quote
+                    if (preg_match('/`None`/', $formatted)) {
+                        $formatted = processNoneBlocksPhp($formatted);
+                    
                     } else if (preg_match('/`Json.pre`\s(.*?)\s`Json`/s', $formatted)) {
                         global $experimentalJson;
                         $formatted = preg_replace('/x3Bcol※/', ';', $formatted);
@@ -653,8 +837,6 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                     }
                      else{
 
-                        $formatted = preg_replace('/x3Bcol※/', ';', $formatted); // semicolon
-                        $formatted = preg_replace('/x201Cdot※/', '"', $formatted); // left double quote
                         $formatted = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $formatted);
                         $formatted = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $formatted);                    
@@ -675,7 +857,10 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                         $formatted = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $formatted);
                         $formatted = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color: #3498db; text-decoration: none;">$1</a>', $formatted);
                     }
+                
+                
                     echo "<p style='margin: 10px 0; color: #2c3e50;'>" . $formatted . "</p>";
+                
                 } elseif ($key === "n") {
                     echo "<br>";
                 }
@@ -691,6 +876,58 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
     headerlinks($headers);
     showNavigationButtons($userId, $selectedLang);
 }
+
+
+function processNoneBlocksPhp($text) {
+    // No `None` tags at all → format everything normally
+    if (!preg_match('/`None`/', $text)) {
+        return formatPhpSection($text);
+    }
+
+    // Split around first pair of `None`
+    return preg_replace_callback('/^(.*?)`None`([\s\S]*?)`None`(.*)$/s', function($m) {
+        $before = processNoneBlocksPhp($m[1]); // recursive format
+        $inside = formatNoneInner($m[2]);      // only Json + code
+        $after  = processNoneBlocksPhp($m[3]); // recursive format
+        return $before . $inside . $after;
+    }, $text);
+}
+
+function formatPhpSection($text) {
+    // full formatting for outside `None`
+    $text = preg_replace('/`Vertical\.L`\s(.*?)\s`Vertical`/', "<span style='float:left; text-align:left;'>$1</span>", $text);
+    $text = preg_replace('/`Vertical\.R`\s(.*?)\s`Vertical`/', "<span style='float:right; text-align:right;'>$1</span>", $text);
+    $text = preg_replace('/`Vertical\.C`\s(.*?)\s`Vertical`/', "<span style='display:inline-block; width:100%; text-align:center;'>$1</span>", $text);
+
+    // JSON blocks
+    $text = preg_replace('/`Json`\s([\s\S]*?)\s`Json`/', '<pre style="background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;">$1</pre>', $text);
+
+    // Font and text modifiers
+    $text = preg_replace('/`font\.(.*?)`\s(.*?)\s`font`/', '<span style="font-family:$1;">$2</span>', $text);
+    $text = preg_replace('/`size\.(.*?)`\s(.*?)\s`size`/', '<span style="font-size:$1px;">$2</span>', $text);
+    $text = preg_replace('/`color\.(.*?)`\s(.*?)\s`color`/', '<span style="color:$1;">$2</span>', $text);
+    $text = preg_replace('/`bg\.(.*?)`\s(.*?)\s`bg`/', '<span style="background-color:$1; padding:2px 4px; border-radius:4px;">$2</span>', $text);
+
+    // Inline code and markdown styles
+    $text = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $text);
+    $text = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $text);
+    $text = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $text);
+    $text = preg_replace('/__(.*?)__/', '<u>$1</u>', $text);
+    $text = preg_replace('/~~(.*?)~~/', '<s>$1</s>', $text);
+
+    // Links
+    $text = preg_replace('/\[(.*?)\]\((.*?)\)/', '<a href="$2" target="_blank" style="color:#3498db; text-decoration:none;">$1</a>', $text);
+
+    return $text;
+}
+
+function formatNoneInner($text) {
+    // only allow Json and inline code inside None
+    $text = preg_replace('/`Json`\s([\s\S]*?)\s`Json`/', '<pre style="background:#f4f4f4; padding:10px; border-radius:4px; overflow-x:auto;">$1</pre>', $text);
+    $text = preg_replace('/`(.*?)`/', '<code style="background:#eee; padding:2px 4px; border-radius:4px;">$1</code>', $text);
+    return $text;
+}
+
 
 
 
@@ -777,6 +1014,26 @@ function headerlinks($headers) {
                 tocSidebar.style.right = "0.8vw";
                 tocContent.style.display = "block";
             }
+        });
+
+        document.addEventListener("click", function(e) {
+            if (e.target.classList.contains("json-summary")) {
+                let container = e.target.nextElementSibling;
+                if(container.style.display === "none") {
+                    container.style.display = "block";
+                    e.target.style.display = "none"; // hide [...] or {...} when expanded
+                } else {
+                    container.style.display = "none";
+                    e.target.style.display = "inline"; // show [...] or {...} when collapsed
+                }
+            }
+        });
+
+        document.getElementById("toggleJsonRenderer").addEventListener("click", () => {
+            const current = document.cookie.match(/experimentalJson=(\d)/);
+            const newVal = current && current[1] === "1" ? 0 : 1;
+            document.cookie = "experimentalJson=" + newVal + "; path=/; max-age=" + (60*60*24*30);
+            location.reload();
         });
     </script>';
 }
@@ -866,27 +1123,24 @@ function updateDocument($requestedPage = null, $lang = 'all', $userId, $newConte
 }
 
 
-?>
-<script>
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("json-summary")) {
-        let container = e.target.nextElementSibling;
-        if(container.style.display === "none") {
-            container.style.display = "block";
-            e.target.style.display = "none"; // hide [...] or {...} when expanded
-        } else {
-            container.style.display = "none";
-            e.target.style.display = "inline"; // show [...] or {...} when collapsed
-        }
+
+function renameDocument($userId = null, $docName = null, $newDocName = null) {
+    if ($userId === null || $userId === '' || $docName === null || $docName === '' || $newDocName === null || $newDocName === '') {
+        echo "Missing parameters for renaming document.";
+        return;
     }
-});
-
-document.getElementById("toggleJsonRenderer").addEventListener("click", () => {
-    const current = document.cookie.match(/experimentalJson=(\d)/);
-    const newVal = current && current[1] === "1" ? 0 : 1;
-    document.cookie = "experimentalJson=" + newVal + "; path=/; max-age=" + (60*60*24*30);
-    location.reload();
-});
-
-</script>
-<?php
+    global $content;
+    if (!isset($content[$userId][$docName])) {
+        echo "Document " . htmlspecialchars($docName) . " not found for user " . htmlspecialchars($userId) . ".";
+        return;
+    }
+    if (isset($content[$userId][$newDocName])) {
+        echo "Document " . htmlspecialchars($newDocName) . " already exists for user " . htmlspecialchars($userId) . ".";
+        return;
+    }
+    $content[$userId][$newDocName] = $content[$userId][$docName];
+    unset($content[$userId][$docName]);
+    writeIni($content);
+    echo "Document " . htmlspecialchars($docName) . " renamed to " . htmlspecialchars($newDocName) . ".";
+    page("doc", $userId, $newDocName);
+}

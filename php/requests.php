@@ -30,6 +30,11 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
             $profileLogin = passwordAndKeyController($key, $userId, $password);
             $userId = $profileLogin[0];
             $password = $profileLogin[1];
+            json_decode($newContent, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                return ["error" => "Invalid JSON in 'newContent' field: " . json_last_error_msg()];
+            }
 
             return updateDocument($requestedPage, $lang ,$userId, $newContent);
         } elseif ($request === "addDocument") {
@@ -42,6 +47,15 @@ function getcontent($request = null,$requestedPage = null, $userId = null, $lang
             $userId = $profileLogin[0];
             $password = $profileLogin[1];
             return removeDocument($requestedPage, $userId, true, $lang);
+        } elseif ($request === "changeDocName") {
+            if ($requestedPage === null or $requestedPage === '' or $newContent === null or $newContent === '') {
+                http_response_code(400);
+                return ["error" => "Missing 'requestedPage' or 'newContent' field."];
+            }
+            $profileLogin = passwordAndKeyController($key, $userId, $password);
+            $userId = $profileLogin[0];
+            $password = $profileLogin[1];
+            return changeDocumentName($requestedPage, $newContent, $userId, true); 
         } elseif ($request === "listLanguages") {
             return listLanguages($userId, $lang, true);
         } elseif ($request === "addLanguage" && $lang !== null && $lang !== '') {
@@ -258,3 +272,28 @@ function passwordAndKeyController($key = null, $userId = null, $password = null,
     }
 }
 
+
+
+function changeDocumentName($requestedPage, $newContent, $userId, $ison) {
+    global $content;
+    if ($requestedPage === null or $requestedPage === '' or $newContent === null or $newContent === '') {
+        http_response_code(400);
+        return ["error" => "Missing 'requestedPage' or 'newContent' field."];
+    }
+    if (!isset($content[$userId][$requestedPage])) {
+        http_response_code(404);
+        return ["error" => "Document not found."];
+    }
+    if (isset($content[$userId][$newContent])) {
+        http_response_code(409);
+        return ["error" => "A document with the new name already exists."];
+    }
+    if (!preg_match('/^[a-zA-Z0-9_-]+$/', $newContent)) {
+        http_response_code(400);
+        return ["error" => "Document name can only contain letters, numbers, underscores, and hyphens."];
+    }
+    $content[$userId][$newContent] = $content[$userId][$requestedPage];
+    unset($content[$userId][$requestedPage]);
+    writeIni($content);
+    return ["success" => true];
+}

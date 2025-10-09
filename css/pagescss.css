@@ -103,7 +103,24 @@ form {
     display: none;
 }
 
+#changeNameBtn {
+    margin-bottom: 0.52vw; /* 10px */
+    align-self: flex-start;
+}
 
+#thedocName {
+    flex: 1;               /* fill the full height of container */
+    width: 100%;
+    resize: none;          /* disable resize */
+    overflow: auto;        /* scroll inside */
+    border: 0.05vw solid #ccc;
+    border-radius: 0.63vw;
+    padding: 0.78vw;
+    font-family: monospace;
+    font-size: 1vw;
+    background: #fff;
+    box-shadow: 0 0.21vw 0.78vw rgba(0,0,0,0.05);
+}
 
 /* Buttons */
 button {

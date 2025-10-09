@@ -359,7 +359,6 @@ function homepage($langId = "swe") {
     }
     
     $homepageContent = $content['AlcuradApi']['homepage'];
-
     $selectedLang = $_SESSION['langId'] ?? $langId;
     $langBlock = null;
 
@@ -403,8 +402,21 @@ function homepage($langId = "swe") {
 
     echo '<link rel="stylesheet" href="./css/homepagecss.css">';
     echo '<div class="header">';
+    echo '<div class="left-header">';
     echo '<h1>'.$tag1.'</h1>';
     echo '<p>'.$tag2.'</p>';
+    echo '</div>';
+    echo '<div class="right-header">';
+    echo '<form method="POST" action="">';
+    echo "<input type='hidden' name='userId' value='AlcuradApi'>";
+    echo "<input type='hidden' name='langId' value='all'>";
+    echo "<input type='hidden' name='viewDoc' value='1'>";
+    echo '<button type="submit" name="docButton" value="ApiDocumentation" id="apiDocButton" class="btn btn-docs">';
+    echo '<img src="favicon.ico" alt="API Docs" style="width:16px; height:16px; vertical-align:middle; margin-right:5px;">';
+    echo 'API Documentation';
+    echo '</button>';
+    echo '</form>';
+    echo '</div>';
     // echo '<form method="POST" action="">';
     // echo '<button type="submit" name="apiDocButton" formaction="" class="btn btn-docs" onclick="window.location.href=\'?page=apidocmd\'">API Documentation</button>';
     // echo '<form>';
@@ -499,11 +511,12 @@ function requests() {
             $_POST["apiVersion"] = false; // to prevent re-submission
             echo "Error: Document name to remove cannot be empty.";
         }
-    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveDoc'])) {
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['saveDoc'] ) || isset($_POST['updatedocName']) )) {
         $userId = htmlspecialchars($_POST['userId']);
         $docName = htmlspecialchars($_POST['docName']);
         $langId = isset($_POST['langId']) ? htmlspecialchars($_POST['langId']) : null;
         $_POST = ['langId' => $langId];
+            // new doc name contains anything other than current doc name
         if (!isset($content['AlcuradApi']) || !isset($content['AlcuradApi']['Editor'])) {
             echo '<div class="alert-error"><h3>Error: No user dashboard content found</h3><p>Please contact the administrator.</p></div>';
             return;
@@ -558,11 +571,8 @@ function requests() {
     //     $_POST = $preservedLang ? ['langId' => $preservedLang] : [];
     //     page("apidocmd");
     //     $_POST["apiVersion"] = false; // to prevent re-submission
-    }
-        
-
     
-
+    }
 
     if // add lang
     ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addLang'])) {
