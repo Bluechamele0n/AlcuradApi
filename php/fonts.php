@@ -1,3 +1,41 @@
+
+<?php
+
+// function generateGoogleFontLinks($limit = 200) {
+//     // You need a Google Fonts API key:
+//     $apiKey = 'AIzaSyCntWOSjpTDY5E2k08ocWo2HV1PMouxcMQ';
+//     $url = "https://www.googleapis.com/webfonts/v1/webfonts?key={$apiKey}&sort=popularity";
+
+//     $response = file_get_contents($url);
+//     if ($response === false) {
+//         die("Error fetching Google Fonts API.");
+//     }
+
+//     $json = json_decode($response, true);
+//     if (!isset($json['items'])) {
+//         die("Unexpected API response.");
+//     }
+
+//     // Limit how many font families you want
+//     $items = array_slice($json['items'], 0, $limit);
+
+//     foreach ($items as $font) {
+//         // Replace spaces with plus signs for the URL
+//         $family = str_replace(' ', '+', $font['family']);
+//         echo "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family={$family}\">\n";
+//     }
+// }
+
+// // Use it, for example generate 500 fonts
+// //generateGoogleFontLinks(500);
+
+
+function fontLoader() {
+    // This function can be expanded to include any additional font loading logic if needed
+    // Currently, it does nothing as fonts are loaded directly in the head section
+
+?>
+
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Audiowide">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans">
@@ -102,42 +140,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Cardo">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Trirong">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Vollkorn">
-
-
-<?php
-
-function generateGoogleFontLinks($limit = 200) {
-    // You need a Google Fonts API key:
-    $apiKey = 'AIzaSyCntWOSjpTDY5E2k08ocWo2HV1PMouxcMQ';
-    $url = "https://www.googleapis.com/webfonts/v1/webfonts?key={$apiKey}&sort=popularity";
-
-    $response = file_get_contents($url);
-    if ($response === false) {
-        die("Error fetching Google Fonts API.");
-    }
-
-    $json = json_decode($response, true);
-    if (!isset($json['items'])) {
-        die("Unexpected API response.");
-    }
-
-    // Limit how many font families you want
-    $items = array_slice($json['items'], 0, $limit);
-
-    foreach ($items as $font) {
-        // Replace spaces with plus signs for the URL
-        $family = str_replace(' ', '+', $font['family']);
-        echo "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family={$family}\">\n";
-    }
-}
-
-// Use it, for example generate 500 fonts
-generateGoogleFontLinks(500);
-
-?>
-
-
-
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+JP">
@@ -2037,3 +2039,7 @@ generateGoogleFontLinks(500);
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Playwrite+AR+Guides">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Playwrite+BE+VLG+Guides">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Playwrite+NO+Guides">
+
+<?php
+
+}

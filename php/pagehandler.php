@@ -4,7 +4,7 @@
 include 'dokumenthandler.php';
 include 'profilehandler.php';
 include 'languagehandler.php';
-
+include 'fonts.php'; 
 
 
 session_start();
@@ -738,7 +738,7 @@ function changePassword() {
 
 function loadAllPages($active, $langId = "swe", $homepageContent) {
     global $content;
-    
+    fontLoader();
     $tag5 = $homepageContent[4];
     $tag5 = $tag5['p'];
     $tag6 = $homepageContent[5];
