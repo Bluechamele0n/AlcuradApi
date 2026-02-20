@@ -404,7 +404,7 @@ function renderPreview() {
 editor.addEventListener("input", renderPreview);
 renderPreview();
 
-// ✅ Fix toggle button
+// toggle button
 document.getElementById("toggleJson").addEventListener("click", () => {
     document.getElementById("livePreview").classList.toggle("hide");
     document.getElementById("jsonPreview").classList.toggle("show");
@@ -497,7 +497,7 @@ function processNoneBlocks(text) {
 }
 
 
-// ✅ Sync scroll between editor and preview
+// Sync scroll between editor and preview
 function syncScroll(source, target) {
     let ratio = source.scrollTop / (source.scrollHeight - source.clientHeight);
     target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
@@ -759,7 +759,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                                      . htmlspecialchars($jsonText) . "</pre>";
                             }
                     
-                            // 🟢 Experimental JSON view
+                            // Experimental JSON view
                             if ($experimentalJson) {
                                 $renderJson = function($item, $level = 0, $isLast = true) use (&$renderJson) {
                                     $indent = str_repeat("    ", $level);
@@ -827,7 +827,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
                                 return "<pre style=\"$styling\">" . $renderJson($data) . "</pre>" . $js;
                             }
                     
-                            // 🔵 Normal JSON view
+                            // Normal JSON view
                             return "<pre style='background:#f4f4f4; padding:1vw; border-radius:0.5vw; overflow-x:auto;'>"
                                  . htmlspecialchars(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "</pre>";
                         }, $formatted);
@@ -876,7 +876,7 @@ function showHtmlDocversion($selectedDoc, $userId, $langId = null) {
 
 
 function processNoneBlocksPhp($text) {
-    // No `None` tags at all → format everything normally
+    // No `None` tags at all -> format everything normally
     if (!preg_match('/`None`/', $text)) {
         return formatPhpSection($text);
     }
@@ -1093,7 +1093,7 @@ function updateDocument($requestedPage = null, $lang = 'all', $userId, $newConte
         // Replace entire document
         $content[$userId][$requestedPage] = $decodedContent;
     } else {
-        // Normalize structure → ensure $existingContent is an array of lang objects
+        // Normalize structure -> ensure $existingContent is an array of lang objects
         if (!isset($existingContent[0]) || !is_array($existingContent[0])) {
             $existingContent = [];
         }

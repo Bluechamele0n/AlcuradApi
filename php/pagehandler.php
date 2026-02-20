@@ -4,7 +4,7 @@
 include 'dokumenthandler.php';
 include 'profilehandler.php';
 include 'languagehandler.php';
-include 'fonts.php'; 
+// include 'fonts.php'; 
 
 
 session_start();
@@ -607,12 +607,6 @@ function requests() {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['homepageLangChange'])) {
         $_SESSION['langId'] = $_POST['langId'];
         page("home");
-    // } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apiDocButton'])) {
-    //     // Preserve language selection when going to API documentation
-    //     $preservedLang = isset($_POST['langId']) ? $_POST['langId'] : null;
-    //     $_POST = $preservedLang ? ['langId' => $preservedLang] : [];
-    //     page("apidocmd");
-    //     $_POST["apiVersion"] = false; // to prevent re-submission
     
     }
 
@@ -652,13 +646,6 @@ function requests() {
         page("user", $userId);
         unset($_POST['removeLangbutton']); // to prevent re-submission
     }
-
-    // when chosen lang go back to user page
-    // if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['langId'])) {
-    //     $userId = htmlspecialchars($_POST['userId']);
-    //     page("user", $userId);
-    // }
-
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerButton'])) {
         print_r($content);
@@ -738,7 +725,7 @@ function changePassword() {
 
 function loadAllPages($active, $langId = "swe", $homepageContent) {
     global $content;
-    fontLoader();
+    // fontLoader();
     $tag5 = $homepageContent[4];
     $tag5 = $tag5['p'];
     $tag6 = $homepageContent[5];
